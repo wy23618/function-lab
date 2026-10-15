@@ -2,11 +2,10 @@
 
 ## 当前状态（2026-10-15）
 
-本地 94 项数学/回归测试、ESLint、TypeScript 和生产构建通过；桌面与触屏浏览器验收通过。Cloudflare 发布配置和 GitHub Actions 已写入，首次线上发布待账号发布授权完成。
+本地 94 项数学/回归测试、ESLint、TypeScript 和生产构建通过；桌面与触屏浏览器验收通过。2026-10-15 已通过 Cloudflare Workers Static Assets 发布，并在公网检查了 HTTPS 与首页响应。
 
-默认地址目标：`https://function-lab.hellovian.workers.dev`。
-首选域名目标：`https://func.hellovian.com`。
-以上地址目前是部署目标，不代表已通过线上访问验收。
+正式地址：[`https://func.hellovian.com`](https://func.hellovian.com)（HTTP 200，Cloudflare HTTPS）。
+备用地址：[`https://function-lab.hellovian.workers.dev`](https://function-lab.hellovian.workers.dev)（HTTP 200）。
 
 ## 发布
 
@@ -27,13 +26,7 @@ daisy.ns.cloudflare.com
 dante.ns.cloudflare.com
 ```
 
-Zone 激活后，在 `wrangler.jsonc` 添加 `routes`：
-
-```json
-[{"pattern":"func.hellovian.com","custom_domain":true}]
-```
-
-然后重新发布，由 Cloudflare 管理 DNS 与 HTTPS。不要把该 Worker 绑定到根域名或覆盖其他业务记录。
+Zone 已激活，`wrangler.jsonc` 将 `func.hellovian.com` 配置为 Worker Custom Domain。Cloudflare 已签发 HTTPS 并完成线上访问检查。不要把该 Worker 绑定到根域名或覆盖其他业务记录。
 
 ## 上线验收
 
@@ -43,7 +36,7 @@ Zone 激活后，在 `wrangler.jsonc` 添加 `routes`：
 
 仓库的 `.github/workflows/deploy.yml` 在 pull request 执行检查，在 `main` 的 push / 手动运行检查通过后执行正式发布。请勿同时启用两个互相覆盖的发布系统。
 
-需要在 GitHub 仓库 Settings → Secrets and variables → Actions 配置：
+GitHub Actions 已随源码推送。检查任务可运行；正式自动发布还需要在 GitHub 仓库 Settings → Secrets and variables → Actions 配置：
 
 - `CLOUDFLARE_ACCOUNT_ID`：你自己的 Cloudflare Account ID。
 - `CLOUDFLARE_API_TOKEN`：仅具备目标账号所需 Workers 发布权限的 API Token。不要把 token 放在代码、聊天或 README 中。

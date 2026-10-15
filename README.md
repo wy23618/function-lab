@@ -15,7 +15,7 @@
 
 ## 在线体验与截图
 
-Cloudflare 默认入口规划为 `https://function-lab.hellovian.workers.dev`，首选自定义域名为 `https://func.hellovian.com`。实际发布、DNS 与 HTTPS 验证状态见 [部署记录](docs/CLOUDFLARE.md)，未验证前不视为已上线。
+在线体验：[`https://func.hellovian.com`](https://func.hellovian.com)（Cloudflare Workers，HTTPS）。备用入口：[`https://function-lab.hellovian.workers.dev`](https://function-lab.hellovian.workers.dev)。
 
 [桌面截图](docs/images/desktop.png) · [手机截图](docs/images/mobile.png) · [详细使用说明](docs/USAGE.md)
 
