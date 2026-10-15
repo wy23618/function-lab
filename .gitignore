@@ -1,0 +1,23 @@
+node_modules/
+dist/
+.runtime/
+*.tsbuildinfo
+test-results/
+playwright-report/
+docs/*.png
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local editor and OS files
+.idea/
+.DS_Store
+Thumbs.db
+*.log

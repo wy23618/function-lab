@@ -1,0 +1,2486 @@
+:root {
+  font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
+  color: #27324b;
+  background: #f7f8fa;
+  font-synthesis: none;
+  font-size: 13px;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button,
+.button-label {
+  border: 1px solid #dfe3eb;
+  background: white;
+  border-radius: 6px;
+  padding: 7px 10px;
+  color: #46526b;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+button:hover,
+.button-label:hover {
+  background: #f0f3fb;
+  border-color: #c1cce5;
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+input,
+select {
+  border: 1px solid #dce2ec;
+  border-radius: 6px;
+  padding: 8px;
+  min-width: 0;
+  background: #fff;
+  color: #27324b;
+}
+input:focus,
+button:focus-visible,
+select:focus {
+  outline: 2px solid #a9b9ff;
+  outline-offset: 1px;
+}
+input[type="checkbox"] {
+  accent-color: #467f78;
+}
+kbd {
+  font-size: 10px;
+  border: 1px solid #e0e4eb;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #8590a3;
+  margin-left: 8px;
+}
+.app-shell {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.app-header {
+  height: 62px;
+  flex-shrink: 0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  border-bottom: 1px solid #e2e6ee;
+  gap: 12px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand strong {
+  font-size: 17px;
+  letter-spacing: 1px;
+}
+.brand-mark {
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 28px;
+  color: #467f78;
+  background: #eef2ff;
+  padding: 0 10px;
+  border-radius: 8px;
+}
+.subtle {
+  color: #8c96a9;
+  font-size: 12px;
+}
+.brand .subtle {
+  padding-left: 10px;
+  border-left: 1px solid #e1e5ec;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 270px minmax(300px, 1fr) 286px;
+  flex: 1;
+  min-height: 0;
+}
+.workspace.panel-hidden {
+  grid-template-columns: 270px minmax(300px, 1fr);
+}
+.left-panel,
+.right-panel {
+  background: #fff;
+  overflow: auto;
+  padding: 18px 15px;
+  display: flex;
+  flex-direction: column;
+}
+.left-panel {
+  border-right: 1px solid #e2e6ee;
+}
+.right-panel {
+  border-left: 1px solid #e2e6ee;
+}
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 19px;
+}
+.section-heading span {
+  color: #939db1;
+  font-size: 11px;
+}
+.input-form label {
+  font-size: 11px;
+  color: #8b94a6;
+  display: block;
+  margin-bottom: 7px;
+}
+.input-row {
+  display: flex;
+  gap: 7px;
+}
+.input-row input {
+  width: 100%;
+  font-size: 15px;
+}
+.primary {
+  background: #467f78;
+  color: white;
+  border-color: #467f78;
+  font-size: 20px;
+  padding: 3px 12px;
+}
+.primary:hover {
+  background: #356b65;
+  color: #fff;
+}
+.input-hint {
+  color: #9aa2b1;
+  font-size: 11px;
+  margin-top: 7px;
+}
+.keyboard-toggle {
+  border: 0;
+  text-align: left;
+  padding: 12px 0 8px;
+  color: #7c879c;
+}
+.keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.keyboard-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.keyboard-tabs button[aria-selected="true"] {
+  background: #e9eeff;
+  color: #467f78;
+  border-color: #c9d3ff;
+}
+.keyboard-keys,
+.keyboard-edit-tools {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+}
+.keyboard-edit-tools {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid #e6ebf4;
+}
+.keyboard button.keyboard-add {
+  color: white;
+  background: #467f78;
+  border-color: #467f78;
+}
+.keyboard button {
+  background: #f8f9fc;
+  font-size: 12px;
+  padding: 7px 2px;
+}
+.list-tools {
+  display: flex;
+  justify-content: space-between;
+  margin: 18px 0 10px;
+}
+.list-tools button {
+  font-size: 11px;
+  border: 0;
+  padding: 4px;
+  color: #8c97ad;
+}
+.function-item {
+  padding: 12px 10px;
+  border: 1px solid #e9edf4;
+  border-radius: 8px;
+  margin-bottom: 9px;
+  cursor: pointer;
+}
+.function-item.selected {
+  border-color: #b5c4ff;
+  background: #f8faff;
+}
+.function-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.function-row input[type="color"] {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.function-row strong {
+  font-size: 12px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+.function-row button {
+  margin-left: auto;
+  border: 0;
+  padding: 2px;
+  font-size: 17px;
+}
+.badge {
+  font-size: 9px;
+  color: #8a96ac;
+  background: #eef1f7;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+.expression-edit {
+  width: 100%;
+  margin-top: 8px;
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 15px;
+  background: transparent;
+  border: 0;
+  padding: 5px 0;
+}
+.mini-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 3px;
+  margin-top: 8px;
+}
+.mini-actions button {
+  font-size: 10px;
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  color: #8a96ac;
+}
+.mini-actions button:hover {
+  color: #467f78;
+}
+.local-note {
+  margin-top: auto;
+  padding-top: 25px;
+  color: #a1a9b8;
+  font-size: 10px;
+  line-height: 1.8;
+}
+.graph-panel {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.graph-topbar {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  border-bottom: 1px solid #e8ecf2;
+  font-size: 11px;
+}
+.graph-topbar .subtle {
+  font-size: 10px;
+  margin-left: 8px;
+}
+.graph-topbar button {
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+}
+.live-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #64a99a;
+  margin-right: 6px;
+}
+.graph-stage {
+  position: relative;
+  flex: 1;
+  min-height: 230px;
+  background: #fafaf8;
+}
+.graph-canvas-wrap {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  inset: 0;
+}
+.graph-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+.view-tools {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.view-tools button {
+  font-size: 11px;
+  background: #ffffffeb;
+  box-shadow: 0 2px 8px #20325906;
+  min-width: 38px;
+}
+.graph-settings {
+  padding: 9px 15px;
+  border-top: 1px solid #e5eaf2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #8390a7;
+}
+.graph-settings label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.graph-settings input {
+  margin: 0;
+}
+.graph-settings span {
+  margin-left: auto;
+  font-size: 10px;
+}
+.graph-settings button {
+  font-size: 10px;
+  border: 0;
+  background: transparent;
+  padding: 2px;
+}
+.explanation {
+  padding: 15px 20px;
+  background: #fff;
+  border-top: 1px solid #e2e7f0;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  min-height: 95px;
+  max-height: 180px;
+  overflow: auto;
+}
+.explanation > span {
+  color: #467f78;
+  font-size: 20px;
+}
+.explanation strong {
+  font-size: 12px;
+}
+.explanation p {
+  margin: 6px 0;
+  font-size: 12px;
+  color: #7c879d;
+  line-height: 1.6;
+}
+.explanation.error {
+  background: #fff8f5;
+  color: #b9573c;
+}
+.formula-chain {
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 11px;
+  color: #7b879d;
+  overflow-wrap: anywhere;
+}
+.formula-chain b {
+  font-weight: normal;
+  color: #467f78;
+  padding: 0 6px;
+}
+.explanation > button {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.current-formula {
+  padding: 10px 12px;
+  border-left: 3px solid #467f78;
+  background: #f7f8fc;
+  font-family: Consolas, "Microsoft YaHei", monospace;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.tool-tabs {
+  display: flex;
+  border-bottom: 1px solid #e7ebf3;
+  margin-top: 15px;
+  justify-content: space-between;
+}
+.tool-tabs button {
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: 12px;
+  padding: 10px 11px;
+  color: #929cae;
+}
+.tool-tabs .active {
+  color: #467f78;
+  border-bottom: 2px solid #467f78;
+}
+.tool-group {
+  padding: 16px 0;
+  border-bottom: 1px solid #edf0f5;
+}
+.tool-group h3 {
+  font-size: 12px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+.button-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.button-grid button {
+  font-size: 11px;
+  padding: 9px 4px;
+}
+.tool-group label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #7b879e;
+  margin: 7px 0;
+}
+.tool-group > input,
+.tool-group select {
+  width: 100%;
+  margin: 6px 0;
+}
+.tool-group label input {
+  width: 100px;
+}
+.parameter label input {
+  width: 66px;
+  text-align: right;
+  padding: 5px 6px;
+}
+.parameter > input {
+  padding: 0;
+  width: 100%;
+  height: 17px;
+  accent-color: #467f78;
+  margin-bottom: 5px;
+}
+.rule {
+  text-align: center;
+  color: #909bb0;
+  font-family: Consolas, monospace;
+  margin: 8px 0 12px;
+  font-size: 12px;
+}
+.wide {
+  width: 100%;
+  font-size: 11px;
+}
+.inline-actions {
+  display: flex;
+  gap: 6px;
+  margin: 8px 0;
+}
+.tool-group small {
+  color: #9aa4b6;
+  font-size: 10px;
+  line-height: 1.7;
+  display: block;
+  margin-top: 8px;
+}
+.tool-group p {
+  line-height: 1.6;
+}
+.history-item {
+  border-left: 2px solid #d8e0f6;
+  padding: 0 0 8px 10px;
+  margin-bottom: 10px;
+}
+.history-item strong {
+  font-size: 11px;
+}
+.history-item code {
+  display: block;
+  font-size: 11px;
+  margin-top: 7px;
+  overflow-wrap: anywhere;
+  color: #6e7d99;
+}
+.history-item p {
+  font-size: 11px;
+  color: #8c97ad;
+}
+.point-strip {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 5px 12px;
+  background: #f6f8fe;
+  max-height: 80px;
+  overflow: auto;
+}
+.point-strip button {
+  font-size: 10px;
+  padding: 4px 6px;
+}
+footer {
+  height: 29px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-top: 1px solid #e2e7ef;
+  padding: 0 20px;
+  color: #9aa4b5;
+  font-size: 10px;
+  flex-shrink: 0;
+}
+footer span:last-child {
+  margin-left: auto;
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #25334c45;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 15vh;
+  z-index: 20;
+}
+.command-palette {
+  background: #fff;
+  border: 1px solid #e0e5f0;
+  border-radius: 12px;
+  width: min(460px, 90vw);
+  box-shadow: 0 18px 60px #1b2f5430;
+  padding: 12px;
+}
+.command-palette > input {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+}
+.command-palette > div {
+  max-height: 45vh;
+  overflow: auto;
+  margin: 8px 0;
+}
+.command-palette button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  border: 0;
+  padding: 11px;
+}
+.command-palette small {
+  color: #919caf;
+  font-size: 10px;
+  margin: 10px;
+}
+.graph-panel:fullscreen {
+  background: #fafaf8;
+}
+.graph-panel:fullscreen .graph-stage {
+  flex: 1;
+}
+
+:root {
+  --ink: #17283a;
+  font-synthesis: weight;
+  --muted: #89949e;
+  --accent: #467f78;
+  --border: #e9ece9;
+  color: var(--ink);
+  background: #fafaf8;
+  font-size: 14px;
+}
+button {
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+button:hover {
+  background: #eef4f1;
+  border-color: #c4d7d0;
+}
+.app-shell {
+  height: 100dvh;
+  background: #fafaf8;
+}
+.app-header {
+  height: 64px;
+  padding: 0 28px;
+  border-color: var(--border);
+  background: #fdfdfb;
+  position: relative;
+  z-index: 25;
+}
+.brand strong {
+  font-family: "Songti SC", "STSong", "SimSun", Georgia, serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 4px;
+}
+.header-actions {
+  gap: 9px;
+}
+.header-actions > button {
+  border: 0;
+  background: transparent;
+  width: 36px;
+  height: 36px;
+  padding: 7px;
+  color: #344658;
+}
+.header-actions > button:hover {
+  background: #edf3ef;
+}
+.header-popover {
+  position: absolute;
+  right: 20px;
+  top: 56px;
+  width: 270px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 40px #23362c1c;
+  line-height: 1.7;
+}
+.header-popover p {
+  color: #74808c;
+  font-size: 12px;
+}
+.settings-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.settings-popover label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.workspace,
+.workspace.panel-hidden {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px;
+  min-height: 0;
+  overflow: hidden;
+}
+.left-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: auto;
+}
+.math-input-area {
+  padding: 20px;
+  background: #ffffffb8;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+}
+.input-form label,
+.mobile-list-toggle {
+  font-family: "Songti SC", "STSong", "SimSun", Georgia, serif;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 19px;
+}
+.input-form label {
+  margin-bottom: 14px;
+}
+.input-row {
+  align-items: center;
+  gap: 0;
+  min-height: 52px;
+  border: 1px solid #b9d3cf;
+  border-radius: 11px;
+  background: white;
+  padding: 0 10px;
+}
+.input-row:focus-within {
+  border-color: #5b9990;
+  box-shadow: 0 0 0 3px #467f780a;
+}
+.input-prefix {
+  color: #395c59;
+  font:
+    italic 23px Georgia,
+    serif;
+  border-right: 1px solid #e0e8e3;
+  padding-right: 11px;
+  margin-right: 9px;
+}
+.input-row input {
+  border: 0;
+  outline: 0;
+  padding: 12px 0;
+  background: transparent;
+  font-size: 15px;
+  width: 100%;
+  font-family: Georgia, "Microsoft YaHei", serif;
+}
+.input-row input:focus {
+  outline: 0;
+}
+.input-row input::placeholder {
+  color: #a0a8b0;
+  font-size: 13px;
+}
+.input-clear {
+  border: 0;
+  padding: 5px;
+  background: transparent;
+  color: #92a1a0;
+  display: flex;
+}
+.add-function {
+  width: 100%;
+  background: #467f78;
+  border-color: #467f78;
+  color: white;
+  margin-top: 12px;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  border-radius: 10px;
+}
+.add-function:hover {
+  color: #fff;
+  background: #376e67;
+}
+.input-hint {
+  display: none;
+}
+.keyboard-toggle {
+  display: block;
+  margin-left: auto;
+  padding: 8px 0 0;
+  font-size: 11px;
+}
+.keyboard {
+  margin: 12px 0 0;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.keyboard-tabs {
+  gap: 0;
+  background: #f6f7f4;
+  padding: 4px;
+  border-radius: 10px;
+}
+.keyboard-tabs button {
+  border: 0;
+  background: transparent;
+  min-height: 32px;
+  border-radius: 8px;
+}
+.keyboard-tabs button[aria-selected="true"] {
+  color: #2f6660;
+  background: #e2ece7;
+}
+.keyboard-keys {
+  gap: 5px;
+}
+.keyboard button {
+  background: white;
+  border-color: #edf0ed;
+  border-radius: 9px;
+  min-height: 38px;
+  font-size: 15px;
+  font-family: Georgia, "Microsoft YaHei", serif;
+}
+.keyboard-edit-tools {
+  gap: 5px;
+  border-color: #e2e8e1;
+  margin-top: 3px;
+  padding-top: 8px;
+}
+.keyboard-edit-tools button {
+  background: #edf0ed;
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 12px;
+}
+.keyboard button.keyboard-add {
+  background: #467f78;
+  border-color: #467f78;
+}
+.formula-preview {
+  display: flex;
+  align-items: center;
+  min-height: 35px;
+  padding: 8px 4px 0;
+  color: #376e67;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.math-formula {
+  font-family: "Cambria Math", Georgia, "Times New Roman", serif;
+  font-size: 21px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+.math-formula i {
+  font-style: italic;
+}
+.math-formula sup {
+  font-size: 0.65em;
+  vertical-align: super;
+  line-height: 0;
+  margin-left: 1px;
+}
+.math-formula sub {
+  font-size: 0.65em;
+}
+.math-op {
+  padding: 0 0.12em;
+}
+.math-power {
+  display: inline;
+}
+.math-fraction {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: middle;
+  align-items: center;
+  font-size: 0.85em;
+  line-height: 1.2;
+  margin: 0 3px;
+}
+.math-fraction > span:first-child {
+  border-bottom: 1px solid currentColor;
+  padding: 0 3px 2px;
+}
+.math-fraction > span:last-child {
+  padding: 2px 3px 0;
+}
+.math-root > span {
+  border-top: 1px solid currentColor;
+  padding: 0 3px;
+}
+.mobile-list-toggle {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  margin: 20px 0 12px;
+  padding: 0 4px;
+}
+.mobile-list-toggle > span {
+  font:
+    11px "Microsoft YaHei",
+    sans-serif;
+  color: #7a9690;
+}
+.function-list-section {
+  min-height: 0;
+}
+.function-list-section.collapsed {
+  display: none;
+}
+.function-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 65px;
+  padding: 12px;
+  border-color: #e8ebe7;
+  background: #ffffffbd;
+  border-radius: 13px;
+  margin-bottom: 9px;
+}
+.function-item.selected {
+  background: #fff;
+  border-color: #d3e1da;
+}
+.function-color {
+  flex: 0 0 17px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+}
+.function-color input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  padding: 0;
+}
+.function-formula {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  text-align: left;
+  background: transparent;
+  color: #17283a;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.formula-name {
+  font:
+    italic 21px Georgia,
+    serif;
+  white-space: nowrap;
+}
+.visibility-switch {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 21px;
+  border-radius: 20px;
+  background: #c5ceca;
+  padding: 3px;
+  border: 0;
+}
+.visibility-switch span {
+  display: block;
+  height: 15px;
+  width: 15px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px #183a3420;
+  transition: transform 0.15s;
+}
+.visibility-switch.on {
+  background: #4c8b7f;
+}
+.visibility-switch.on span {
+  transform: translateX(13px);
+}
+.function-more {
+  flex: 0 0 24px;
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  display: flex;
+}
+.function-delete {
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #9b625d;
+}
+.function-delete:disabled {
+  opacity: 0.35;
+}
+.function-delete:not(:disabled):hover {
+  background: #f9eeec;
+  color: #b4473d;
+}
+.function-menu {
+  position: absolute;
+  z-index: 30;
+  top: 54px;
+  right: 8px;
+  width: 172px;
+  padding: 6px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 9px 25px #19372e20;
+}
+.function-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0;
+  padding: 10px;
+  text-align: left;
+  font-size: 12px;
+}
+.function-menu .danger {
+  color: #b35e56;
+}
+.local-note {
+  display: none;
+}
+.graph-panel {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: white;
+  overflow: hidden;
+  min-height: 0;
+}
+.graph-stage {
+  min-height: 120px;
+  background: #fafaf8;
+}
+.view-tools {
+  top: 20px;
+  right: 20px;
+  gap: 0;
+  border: 1px solid #eceeea;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px #1c352d10;
+  background: #fffffff0;
+  padding: 5px;
+}
+.view-tools button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 39px;
+  height: 43px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  border-radius: 8px;
+  color: #35495b;
+}
+.view-tools button + button {
+  border-top: 1px solid #eff0ed;
+}
+.view-tools button:hover {
+  background: #edf4ef;
+}
+.graph-settings {
+  display: none;
+}
+.explanation.quiet {
+  display: none;
+}
+.explanation {
+  background: #fdfdfb;
+  padding: 11px 16px;
+  min-height: 0;
+  max-height: 100px;
+  flex-shrink: 0;
+}
+.explanation > span {
+  color: #467f78;
+}
+.explanation p {
+  font-size: 12px;
+}
+.graph-resize-handle {
+  display: none;
+}
+.right-panel {
+  position: fixed;
+  z-index: 45;
+  top: 78px;
+  right: 18px;
+  bottom: 18px;
+  width: 330px;
+  border: 1px solid #e4e9e3;
+  border-radius: 18px;
+  box-shadow: 0 12px 50px #22392d25;
+  padding: 20px;
+  background: #fff;
+}
+.close-tools {
+  border: 0;
+  display: flex;
+  padding: 3px;
+}
+.tools-backdrop {
+  position: fixed;
+  inset: 64px 0 0;
+  background: #243c3020;
+  z-index: 40;
+}
+.section-heading span {
+  display: none;
+}
+.current-formula {
+  border-radius: 9px;
+  background: #f6f8f4;
+}
+.tool-tabs .active {
+  color: #467f78;
+  border-color: #467f78;
+}
+footer {
+  display: none;
+}
+.graph-panel:fullscreen {
+  border: 0;
+  border-radius: 0;
+  background: #fafaf8;
+}
+@media (min-width: 1500px) {
+  .workspace,
+  .workspace.panel-hidden {
+    grid-template-columns: 355px minmax(0, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .workspace,
+  .workspace.panel-hidden {
+    grid-template-columns: 270px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+  .app-header {
+    padding: 0 18px;
+  }
+  .math-input-area {
+    padding: 16px;
+  }
+  .brand strong {
+    font-size: 23px;
+  }
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .app-header {
+    height: 56px;
+    flex-shrink: 0;
+    padding: 0 18px;
+  }
+  .brand strong {
+    font-size: 23px;
+    letter-spacing: 3px;
+  }
+  .header-actions {
+    gap: 3px;
+  }
+  .header-actions > button {
+    width: 30px;
+    height: 32px;
+    padding: 5px;
+  }
+  .workspace,
+  .workspace.panel-hidden {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    overflow-y: auto;
+    scroll-padding-top: calc(var(--portrait-graph-size, 60svh) + 10px);
+  }
+  .workspace > .graph-panel {
+    order: 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    flex: 0 0 auto;
+    width: 100%;
+    height: clamp(
+      220px,
+      var(--portrait-graph-size, 60svh),
+      calc(100svh - 110px)
+    );
+    border: 0;
+    border-radius: 0;
+    overflow: hidden;
+  }
+  .graph-stage {
+    min-height: 70px;
+  }
+  .view-tools {
+    top: 14px;
+    right: 14px;
+    border-radius: 14px;
+    padding: 4px;
+  }
+  .view-tools button {
+    width: 34px;
+    height: 36px;
+  }
+  .view-tools button svg {
+    width: 19px;
+    height: 19px;
+  }
+  .graph-resize-handle {
+    display: flex;
+    flex: 0 0 26px;
+    min-height: 26px;
+    align-items: center;
+    justify-content: center;
+    background: #fafaf8;
+    touch-action: none;
+    cursor: ns-resize;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .resize-grip {
+    width: 46px;
+    height: 5px;
+    border-radius: 10px;
+    background: #bdc8c4;
+  }
+  .graph-resize-handle > span:last-child {
+    display: none;
+  }
+  .graph-resize-handle.is-resizing {
+    background: #e8f1ec;
+  }
+  .graph-resize-handle.is-resizing .resize-grip {
+    background: #467f78;
+  }
+  .workspace > .left-panel {
+    order: 1;
+    flex: 0 0 auto;
+    overflow: visible;
+    border-radius: 22px 22px 0 0;
+    background: #fdfdfb;
+    padding: 20px 18px 28px;
+    border-top: 1px solid #edf0eb;
+  }
+  .math-input-area {
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+  }
+  .input-row {
+    min-height: 51px;
+  }
+  .input-row input {
+    font-size: 16px;
+  }
+  .input-prefix {
+    font-size: 24px;
+  }
+  .add-function {
+    font-size: 15px;
+    min-height: 43px;
+  }
+  .mobile-list-toggle {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #eef0eb;
+  }
+  .function-item {
+    padding: 12px;
+    min-height: 61px;
+    gap: 11px;
+  }
+  .math-keyboard-open .math-input-area {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    background: #fdfdfb;
+    border: 1px solid #edf0eb;
+    border-radius: 22px 22px 0 0;
+    padding: 14px 14px calc(10px + env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 24px #2a493215;
+    max-height: 62dvh;
+    display: flex;
+    flex-direction: column;
+  }
+  .math-keyboard-open .input-form label {
+    display: none;
+  }
+  .math-keyboard-open .input-form .add-function {
+    display: none;
+  }
+  .math-keyboard-open .input-row {
+    min-height: 44px;
+  }
+  .math-keyboard-open .input-row input {
+    padding: 9px 0;
+  }
+  .math-keyboard-open .keyboard-toggle {
+    padding-top: 3px;
+  }
+  .math-keyboard-open .keyboard {
+    margin-top: 7px;
+    min-height: 0;
+    flex: 1;
+  }
+  .math-keyboard-open .keyboard-keys {
+    overflow-y: auto;
+    min-height: 0;
+    max-height: calc(62dvh - 167px);
+  }
+  .math-keyboard-open .keyboard button {
+    min-height: 35px;
+    padding: 5px 1px;
+    font-size: 16px;
+  }
+  .math-keyboard-open .keyboard-tabs button {
+    min-height: 30px;
+    font-size: 12px;
+  }
+  .math-keyboard-open .keyboard-edit-tools {
+    flex-shrink: 0;
+  }
+  .math-keyboard-open .keyboard-edit-tools button {
+    font-size: 12px;
+  }
+  .math-keyboard-open .workspace {
+    padding-bottom: calc(var(--math-dock-height) + 14px);
+  }
+  .math-keyboard-open .workspace > .graph-panel {
+    height: max(
+      150px,
+      min(
+        var(--portrait-graph-size, 60svh),
+        calc(100dvh - var(--math-dock-height) - 58px)
+      )
+    );
+  }
+  .math-keyboard-open .view-tools {
+    flex-direction: row;
+    top: 8px;
+    right: 8px;
+    border-radius: 10px;
+  }
+  .math-keyboard-open .view-tools button {
+    height: 29px;
+    width: 31px;
+  }
+  .math-keyboard-open .view-tools button + button {
+    border-top: 0;
+  }
+  .math-keyboard-open .explanation {
+    max-height: 43px;
+    flex-shrink: 1;
+    padding: 6px 10px;
+  }
+  .right-panel {
+    top: 68px;
+    bottom: 14px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    border-radius: 20px;
+  }
+  .header-popover {
+    right: 12px;
+    top: 52px;
+  }
+  .graph-panel:fullscreen {
+    position: fixed;
+    height: 100dvh;
+  }
+}
+/* Touch landscape keeps the graph visible alongside a dedicated input rail. */
+@media (max-height: 600px) and (orientation: landscape) {
+  .app-header {
+    height: 44px;
+    padding: 0 16px;
+  }
+  .brand strong {
+    font-size: 21px;
+    letter-spacing: 3px;
+  }
+  .workspace,
+  .workspace.panel-hidden {
+    grid-template-columns: minmax(230px, 34%) minmax(0, 1fr);
+    padding: 8px;
+    gap: 8px;
+  }
+  .math-input-area {
+    padding: 12px;
+  }
+  .input-form label {
+    font-size: 16px;
+    margin-bottom: 8px;
+  }
+  .input-row {
+    min-height: 42px;
+  }
+  .input-row input {
+    font-size: 16px;
+    padding: 9px 0;
+  }
+  .add-function {
+    min-height: 35px;
+    margin-top: 8px;
+  }
+  .brand strong {
+    font-size: 20px;
+  }
+  .view-tools {
+    top: 10px;
+    right: 10px;
+    padding: 3px;
+  }
+  .view-tools button {
+    width: 30px;
+    height: 32px;
+  }
+  .keyboard button {
+    min-height: 30px;
+    padding: 4px 1px;
+    font-size: 14px;
+  }
+  .keyboard-tabs button {
+    min-height: 27px;
+    font-size: 11px;
+  }
+  .math-keyboard-open .math-input-area {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: #fdfdfb;
+  }
+  .math-keyboard-open .input-form label,
+  .math-keyboard-open .add-function {
+    display: none;
+  }
+  .math-keyboard-open .keyboard-toggle {
+    padding-top: 3px;
+  }
+  .math-keyboard-open .keyboard {
+    margin-top: 6px;
+  }
+  .math-keyboard-open .keyboard-keys {
+    max-height: calc(100dvh - 205px);
+    overflow-y: auto;
+  }
+  .formula-preview {
+    min-height: 26px;
+    padding-top: 4px;
+  }
+  .formula-preview .math-formula {
+    font-size: 19px;
+  }
+  .right-panel {
+    top: 52px;
+    bottom: 8px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}
+
+.formula-preview {
+  justify-content: space-between;
+  gap: 12px;
+}
+.editing-hint {
+  flex-shrink: 0;
+  font:
+    10px "Microsoft YaHei",
+    sans-serif;
+  color: #81978e;
+}
+.cancel-edit {
+  float: right;
+  padding: 3px 0;
+  border: 0;
+  background: transparent;
+  color: #718b83;
+  font-size: 11px;
+}
+.formula-preview.is-power-editing sup {
+  background: #e1eee6;
+  border-radius: 4px;
+  padding: 2px 3px;
+  color: #2f6c59;
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .editing-hint {
+    font-size: 9px;
+  }
+}
+
+.header-popover {
+  max-height: calc(100dvh - 76px);
+  overflow-y: auto;
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  .math-keyboard-open .math-input-area {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    overflow: hidden;
+  }
+  .math-keyboard-open .input-form {
+    flex-shrink: 0;
+  }
+  .math-keyboard-open .keyboard-toggle {
+    flex-shrink: 0;
+    font-size: 10px;
+    line-height: 12px;
+    padding-top: 3px;
+  }
+  .math-keyboard-open .keyboard {
+    flex: 1;
+    min-height: 0;
+    gap: 4px;
+    margin-top: 4px;
+  }
+  .math-keyboard-open .keyboard-keys {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    align-content: start;
+    gap: 3px;
+    overflow-y: auto;
+  }
+  .math-keyboard-open .keyboard button {
+    min-height: 27px;
+    padding: 3px 1px;
+  }
+  .math-keyboard-open .keyboard-tabs,
+  .math-keyboard-open .keyboard-edit-tools {
+    flex-shrink: 0;
+  }
+  .math-keyboard-open .keyboard-tabs {
+    padding: 2px;
+  }
+  .math-keyboard-open .keyboard-tabs button {
+    min-height: 24px;
+  }
+  .math-keyboard-open .keyboard-edit-tools {
+    gap: 3px;
+    padding-top: 6px;
+  }
+  .math-keyboard-open .function-list-section,
+  .math-keyboard-open .mobile-list-toggle {
+    display: none;
+  }
+  .math-keyboard-open .formula-preview {
+    min-height: 22px;
+  }
+}
+
+.input-error {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #aa574a;
+  padding: 8px 2px 0;
+}
+
+/* Direct, reversible list actions and tactile mathematical keys. */
+.function-list-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0 12px;
+}
+.function-list-heading .mobile-list-toggle {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  gap: 8px;
+}
+.clear-functions {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: #9b655d;
+  font-size: 12px;
+  padding: 8px 2px;
+}
+.clear-functions:disabled {
+  opacity: 0.35;
+}
+.function-empty {
+  padding: 18px 10px;
+  color: #7b8985;
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.function-empty button {
+  border: 0;
+  background: transparent;
+  color: #39796e;
+}
+.keyboard-top-row {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.keyboard-top-row .keyboard-tabs {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+.keyboard-corner-tools {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.keyboard-corner-tools button {
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  padding: 4px;
+  background: #e8efeb;
+}
+.keyboard .keyboard-edit-tools {
+  grid-template-columns: repeat(4, 1fr) 1.5fr;
+}
+.keyboard button {
+  transition:
+    transform 100ms ease,
+    background-color 100ms ease,
+    box-shadow 100ms ease;
+  touch-action: manipulation;
+}
+.keyboard button:active:not(:disabled) {
+  transform: scale(0.92);
+  background: #b8d9d2;
+  box-shadow: inset 0 2px 5px #396e6430;
+}
+.tool-target {
+  position: sticky;
+  top: -16px;
+  z-index: 2;
+  background: #fafbf8;
+  padding: 12px 0 6px;
+  border-bottom: 1px solid #e4eae5;
+}
+.tool-target label {
+  font-size: 12px;
+  color: #52776f;
+  display: block;
+  margin-bottom: 5px;
+}
+.tool-target select {
+  width: 100%;
+  font-size: 13px;
+  text-overflow: ellipsis;
+}
+.tool-target .current-formula {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+  margin: 8px 0;
+}
+.tool-instructions,
+.tool-result p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #74817c;
+  margin: 8px 0;
+}
+.tool-result {
+  background: #eaf3ef;
+  border: 1px solid #ccdfd6;
+  padding: 12px;
+  border-radius: 12px;
+  margin: 12px 0;
+}
+.tool-result > strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.tool-result button {
+  font-size: 12px;
+  margin: 4px 5px 0 0;
+}
+.orientation-hint {
+  position: fixed;
+  z-index: 100;
+  top: 66px;
+  left: 12px;
+  right: 12px;
+  background: #eaf3ef;
+  color: #355b52;
+  border: 1px solid #ccdfd6;
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.orientation-hint button {
+  border: 0;
+  background: transparent;
+  margin-left: auto;
+}
+.landscape-entry {
+  display: none;
+}
+@media (max-width: 800px) {
+  .landscape-entry {
+    display: grid;
+  }
+  .function-list-heading {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #eef0eb;
+  }
+  .keyboard-top-row .keyboard-tabs button {
+    padding: 4px 0;
+    font-size: 12px;
+  }
+  .keyboard-corner-tools button {
+    min-width: 30px;
+  }
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  .landscape-entry {
+    display: grid;
+  }
+  .math-keyboard-open .function-list-heading {
+    display: none;
+  }
+  .keyboard-corner-tools button {
+    min-width: 27px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .keyboard button {
+    transition: none;
+  }
+}
+/* Formula glyphs sit directly on the graph without a backing tag. */
+.curve-label-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.curve-label {
+  position: absolute;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  padding: 0;
+  border: 0;
+  background: none;
+  font:
+    12px/16px "Cambria Math",
+    Georgia,
+    serif;
+}
+.curve-label .math-formula {
+  font-size: 12px;
+  line-height: 16px;
+}
+.curve-label .math-power sup {
+  font-size: 0.62em;
+}
+.tool-feedback {
+  background: #eaf3ef;
+  border-radius: 9px;
+  padding: 10px;
+  color: #39675d;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+/* Rotate the whole workbench when the browser cannot lock device orientation. */
+.manual-landscape {
+  position: fixed;
+  inset: 0 auto auto 0;
+  z-index: 1000;
+  width: 100dvh;
+  height: 100dvw;
+  transform: translateX(100dvw) rotate(90deg);
+  transform-origin: top left;
+  overflow: hidden;
+  background: #f7f8fa;
+}
+.manual-landscape .app-header {
+  height: 48px;
+  flex: 0 0 48px;
+  padding: 0 12px;
+}
+.manual-landscape .workspace,
+.manual-landscape .workspace.panel-hidden {
+  display: grid;
+  grid-template-columns: minmax(205px, 31%) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  padding: 6px;
+  gap: 6px;
+  overflow: hidden;
+}
+.manual-landscape .workspace > .left-panel {
+  order: 0;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px;
+}
+.manual-landscape .workspace > .graph-panel {
+  order: 1;
+  position: relative;
+  inset: auto;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.manual-landscape .graph-stage {
+  min-height: 0;
+  flex: 1;
+}
+.manual-landscape .graph-resize-handle,
+.manual-landscape footer {
+  display: none;
+}
+.manual-landscape .landscape-entry {
+  display: grid;
+}
+.manual-landscape .right-panel {
+  top: 54px;
+  right: 8px;
+  bottom: 8px;
+  width: min(330px, 38%);
+}
+.manual-landscape .tools-backdrop {
+  inset: 48px 0 0;
+}
+body:has(.manual-landscape) {
+  overflow: hidden;
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  .landscape-entry {
+    display: grid;
+  }
+}
+/* Names and actions stay on the graph; settings only control presentation. */
+.graph-legend {
+  position: absolute;
+  z-index: 5;
+  top: 12px;
+  left: 14px;
+  max-width: calc(100% - 96px);
+  max-height: 32%;
+  overflow: auto;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.graph-legend > button {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  gap: 3px;
+  min-height: 34px;
+  max-width: 100%;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font:
+    italic 18px/1.35 Georgia,
+    serif;
+  text-align: left;
+  white-space: nowrap;
+}
+.graph-legend .legend-name {
+  flex-shrink: 0;
+}
+.graph-legend .math-formula {
+  font-size: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.graph-legend > button.selected .legend-name {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.graph-legend .legend-expand {
+  font: 13px/1.4 inherit;
+  color: #536b62;
+  min-height: 32px;
+}
+.curve-label-layer {
+  z-index: 4;
+}
+.curve-label {
+  pointer-events: auto;
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  text-shadow: none;
+  white-space: nowrap;
+  font:
+    italic 20px/28px Georgia,
+    serif;
+  overflow: visible;
+}
+.curve-label:hover,
+.curve-label.selected {
+  background: none;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.function-actions {
+  position: absolute;
+  z-index: 8;
+  left: 12px;
+  bottom: 12px;
+  width: min(520px, calc(100% - 24px));
+  max-height: 55%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #dce6df;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 3px 12px #21493812;
+  overflow: hidden;
+}
+.function-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  flex-shrink: 0;
+  padding: 3px 6px;
+}
+.function-action-bar > button {
+  flex: 1;
+  border: 0;
+  background: none;
+  font-size: 14px;
+  padding: 9px 6px;
+  min-height: 38px;
+  white-space: nowrap;
+}
+.function-action-bar > button.active {
+  background: #eaf2ed;
+  color: #306e5d;
+}
+.action-target {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  flex: 0 0 auto;
+  font-size: 12px;
+}
+.action-target select {
+  max-width: 110px;
+  border: 0;
+  background: transparent;
+  padding: 6px 0;
+  color: inherit;
+  font:
+    italic 17px Georgia,
+    serif;
+}
+.function-action-bar > .action-collapse {
+  flex: 0 0 28px;
+  padding: 5px;
+}
+.function-action-body {
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 12px 12px;
+  border-top: 1px solid #edf1ec;
+}
+.action-description {
+  display: block;
+  color: #687b70;
+  font-size: 12px;
+  margin-bottom: 9px;
+}
+.action-adjustment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  font-size: 13px;
+}
+.action-adjustment > span {
+  flex: 0 0 66px;
+}
+.action-adjustment input[type="range"] {
+  flex: 1;
+  min-width: 30px;
+  padding: 0;
+  accent-color: #4c8b7f;
+}
+.action-adjustment input[type="number"] {
+  flex: 0 0 62px;
+  width: 62px;
+  min-height: 34px;
+  padding: 4px;
+}
+.action-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+.action-options > button {
+  min-height: 39px;
+  padding: 7px 5px;
+  font-size: 13px;
+  border-color: #e6ece7;
+  background: #fafcf9;
+}
+.action-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.action-fields > label,
+.composition-controls > label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.action-fields > label > input,
+.action-fields > label > select,
+.composition-controls select {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  padding: 7px;
+  font-size: 14px;
+}
+.action-fields small,
+.composition-controls small {
+  color: #65796e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.action-back {
+  border: 0;
+  background: none;
+  color: #477669;
+  padding: 0 0 9px;
+  font-size: 13px;
+}
+.composition-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.composition-order {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+.composition-order > button {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 7px;
+  font-size: 12px;
+}
+.composition-formula {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 18px;
+  line-height: 1.6;
+}
+.composition-expanded {
+  color: #6c7e74;
+}
+.action-save {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  border-top: 1px solid #edf1ec;
+  flex-shrink: 0;
+  margin-top: 0;
+  padding: 8px 12px;
+  background: #fff;
+  flex-wrap: wrap;
+}
+.action-save > span {
+  margin-right: auto;
+  font-size: 12px;
+  color: #61756a;
+}
+.action-save > button {
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+.action-save > button.primary {
+  background: #4c8b7f;
+  border-color: #4c8b7f;
+  color: white;
+}
+.action-feedback,
+.action-error {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #496c5c;
+}
+.action-error {
+  color: #b4473d;
+}
+.action-history {
+  font-size: 13px;
+  line-height: 1.6;
+}
+.graph-feedback {
+  position: absolute;
+  bottom: 65px;
+  left: 16px;
+  right: 16px;
+  z-index: 9;
+  color: #b4473d;
+  font-size: 13px;
+  pointer-events: none;
+}
+.keyboard-corner-tools button {
+  width: auto;
+  min-width: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 12px;
+  padding: 5px;
+}
+.keyboard .keyboard-edit-tools {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) 1.4fr 1.6fr;
+}
+.keyboard-backspace {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+}
+@media (max-width: 800px) {
+  .graph-legend {
+    left: 10px;
+    top: 8px;
+  }
+  .graph-legend > button,
+  .graph-legend .math-formula {
+    font-size: 18px;
+  }
+  .function-actions {
+    left: 8px;
+    bottom: 8px;
+    width: calc(100% - 16px);
+    max-height: 55%;
+  }
+  .function-action-bar {
+    gap: 0;
+    padding: 2px 4px;
+  }
+  .action-target {
+    gap: 2px;
+    padding: 0 2px;
+  }
+  .action-target select {
+    max-width: 85px;
+    font-size: 16px;
+  }
+  .function-action-bar > button {
+    padding: 8px 4px;
+    font-size: 13px;
+  }
+  .action-target > span {
+    display: none;
+  }
+  .function-action-body {
+    padding: 8px 10px 10px;
+  }
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  .graph-legend {
+    left: 10px;
+    top: 7px;
+    max-height: 32%;
+  }
+  .graph-legend > button {
+    min-height: 30px;
+    padding: 2px 0;
+  }
+  .function-actions {
+    max-height: 58%;
+    bottom: 7px;
+  }
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  .composition-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: 6px;
+  }
+  .composition-controls > label {
+    font-size: 12px;
+    gap: 4px;
+  }
+  .composition-order {
+    font-size: 12px;
+    gap: 5px;
+  }
+  .composition-order > button {
+    font-size: 11px;
+    padding: 5px;
+  }
+  .composition-formula {
+    grid-column: 1/-1;
+    line-height: 1.3;
+  }
+  .composition-formula .math-formula {
+    font-size: 17px;
+  }
+  .composition-controls small {
+    display: none;
+  }
+}
+.manual-landscape .composition-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 6px;
+}
+.manual-landscape .composition-controls > label {
+  font-size: 12px;
+  gap: 4px;
+}
+.manual-landscape .composition-order {
+  font-size: 12px;
+  gap: 5px;
+}
+.manual-landscape .composition-formula {
+  grid-column: 1/-1;
+  line-height: 1.3;
+}
+.manual-landscape .composition-formula .math-formula {
+  font-size: 17px;
+}
+.manual-landscape .composition-controls small {
+  display: none;
+}
+/* Stable interaction frames: only the contents change while using tools. */
+.function-actions[hidden] {
+  display: none;
+}
+.function-actions.open {
+  height: min(300px, 55%);
+}
+.function-action-body {
+  flex: 1;
+  animation: tool-content-enter 120ms ease-out;
+}
+.function-action-bar {
+  height: 44px;
+  min-height: 44px;
+}
+.action-save {
+  height: 56px;
+  min-height: 56px;
+  flex-wrap: nowrap;
+}
+.action-save > span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.action-save > button {
+  flex-shrink: 0;
+}
+.function-action-bar > button.active {
+  background: #dceee5;
+  color: #276751;
+  box-shadow: inset 0 -2px #55957b;
+}
+.action-options > button.chosen {
+  background: #dceee5;
+  border-color: #55957b;
+  color: #276751;
+}
+.function-actions button,
+.header-actions button,
+.view-tools button,
+.add-function {
+  transition:
+    background-color 100ms ease,
+    box-shadow 100ms ease,
+    transform 90ms ease;
+  touch-action: manipulation;
+}
+.function-actions button:active:not(:disabled),
+.header-actions button:active:not(:disabled),
+.view-tools button:active:not(:disabled),
+.add-function:active:not(:disabled) {
+  transform: scale(0.96);
+  box-shadow: inset 0 1px 4px #264f3925;
+}
+.keyboard-keys {
+  height: 232px;
+  overflow: auto;
+  align-content: start;
+}
+.math-keyboard-open .keyboard-keys {
+  height: min(232px, calc(62dvh - 180px));
+}
+@keyframes tool-content-enter {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (max-height: 600px) and (orientation: landscape) {
+  .function-actions.open {
+    height: 58%;
+  }
+  .math-keyboard-open .keyboard-keys {
+    height: max(80px, calc(100dvh - 205px));
+  }
+}
+.manual-landscape .function-actions.open {
+  height: 58%;
+}
+.manual-landscape .keyboard-keys {
+  height: 130px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .function-action-body {
+    animation: none;
+  }
+  .function-actions button,
+  .header-actions button,
+  .view-tools button,
+  .add-function {
+    transition: none;
+  }
+}
+.function-actions.compact.open {
+  height: calc(100% - 16px);
+  max-height: calc(100% - 16px);
+}
+.action-collapse:disabled {
+  visibility: hidden;
+}
+.manual-landscape.math-keyboard-open .math-input-area {
+  position: static;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  padding: 6px;
+  overflow: hidden;
+  box-shadow: none;
+  border-radius: 12px;
+}
+.manual-landscape.math-keyboard-open .input-form {
+  flex-shrink: 0;
+}
+.manual-landscape.math-keyboard-open .keyboard {
+  flex: 1;
+  min-height: 0;
+  gap: 4px;
+  margin-top: 4px;
+}
+.manual-landscape.math-keyboard-open .keyboard-keys {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
+.manual-landscape.math-keyboard-open .keyboard button {
+  min-height: 28px;
+  padding: 3px 1px;
+}
+.manual-landscape.math-keyboard-open .function-list-heading,
+.manual-landscape.math-keyboard-open .function-list-section {
+  display: none;
+}
+.analysis-result {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.analysis-result > p {
+  margin: 8px 0 12px;
+}
+.analysis-result > strong {
+  font-size: 15px;
+  color: #365f4e;
+}
+.analysis-result > small {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #617869;
+}
+.analysis-result .action-options {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.action-save > .action-watch {
+  width: 76px;
+  padding: 8px 4px;
+}
