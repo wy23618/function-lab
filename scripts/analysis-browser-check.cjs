@@ -2,6 +2,7 @@ const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 (async () => {
+  fs.mkdirSync(".runtime/test-results", { recursive: true });
   const browser = await chromium.launch({
     headless: true,
     executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -76,7 +77,7 @@ const fs = require("node:fs");
   );
   assert.match(await page.getByRole("status").innerText(), /A′/);
   passed.push("point reflection and perpendicular reference");
-  await page.screenshot({ path: "docs/geometry.png", fullPage: true });
+  await page.screenshot({ path: ".runtime/test-results/geometry.png", fullPage: true });
   const width = (await canvas.boundingBox()).width;
   await button("收起工具 ›").click();
   assert.ok((await canvas.boundingBox()).width > width);
@@ -154,7 +155,7 @@ const fs = require("node:fs");
   });
   assert.deepEqual(errors, []);
   fs.writeFileSync(
-    "docs/analysis-browser-results.json",
+    ".runtime/test-results/analysis-browser-results.json",
     JSON.stringify(
       { passed, errors, canvasFrameWaitMs: canvasTiming },
       null,

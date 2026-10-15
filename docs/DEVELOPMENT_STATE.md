@@ -23,7 +23,7 @@ React 19 + TypeScript + Vite 7，本地静态应用，mathjs 15 负责安全 AST
 
 ## 验证
 
-单元、类型、lint、生产构建与实际 Chrome 浏览器验收，最新记录见 `ACCEPTANCE.md` 和各 `*-browser-results.json`。启动脚本在 Windows PowerShell 5.1 实测，使用带 BOM 的 UTF-8 与 ASCII 就绪标记。
+单元、类型、lint、生产构建与实际 Chrome 浏览器验收，最新记录见 `ACCEPTANCE.md` ；专项脚本的报告运行后位于 `.runtime/test-results/`。启动脚本在 Windows PowerShell 5.1 实测，使用带 BOM 的 UTF-8 与 ASCII 就绪标记。
 
 ## 范围
 

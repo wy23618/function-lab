@@ -2,6 +2,7 @@ const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 (async () => {
+  fs.mkdirSync(".runtime/test-results", { recursive: true });
   const browser = await chromium.launch({
     headless: true,
     executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -14,7 +15,7 @@ const fs = require("node:fs");
   await page.goto("http://127.0.0.1:5173/");
   await page.waitForSelector("canvas");
   await page.waitForTimeout(800);
-  await page.screenshot({ path: "docs/desktop.png", fullPage: true });
+  await page.screenshot({ path: ".runtime/test-results/desktop.png", fullPage: true });
   assert.equal(await page.locator(".function-item").count(), 2);
   await page.getByLabel("输入表达式", { exact: true }).fill("1/(x-2)");
   await page.waitForTimeout(300);
@@ -71,7 +72,7 @@ const fs = require("node:fs");
   assert.equal(await page.locator(".explanation.error").count(), 0);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(300);
-  await page.screenshot({ path: "docs/mobile.png", fullPage: true });
+  await page.screenshot({ path: ".runtime/test-results/mobile.png", fullPage: true });
   assert.ok(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth + 1,
@@ -79,7 +80,7 @@ const fs = require("node:fs");
   );
   assert.deepEqual(errors, []);
   fs.writeFileSync(
-    "docs/browser-results.json",
+    ".runtime/test-results/browser-results.json",
     JSON.stringify({ passed: true, checks: 13, errors }, null, 2),
   );
   await browser.close();

@@ -5,6 +5,7 @@ dist/
 test-results/
 playwright-report/
 docs/*.png
+docs/*-results.json
 
 # Local configuration and credentials
 .env

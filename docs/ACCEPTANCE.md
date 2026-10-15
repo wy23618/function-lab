@@ -32,4 +32,4 @@
 
 最终验证：62 项单元测试通过，lint、类型检查和生产构建通过。四组 Chrome 浏览器验收共 48 项检查通过，页面运行错误为 0；桌面、手机、参数与点反射截图已复核。Windows 启动脚本冷启动通过。数值近似与可选后续模块范围详见 README。
 
-追加输入需求覆盖 `sinx`、`e^(Πt)`、`u(t)=m*t+n`、任意单字母变量、参数数字/滑块、`sin(t²)`、`u(v(t))`、受限源定义域、导数参数变更、变量相关变换/定义域/反函数、保存重载及手机参数布局。证据见 expressionInput.test、functionContext.test 和 input-browser-results.json。
+追加输入需求覆盖 `sinx`、`e^(Πt)`、`u(t)=m*t+n`、任意单字母变量、参数数字/滑块、`sin(t²)`、`u(v(t))`、受限源定义域、导数参数变更、变量相关变换/定义域/反函数、保存重载及手机参数布局。证据见 expressionInput.test、functionContext.test 和 scripts/input-browser-check.cjs（早期界面专项场景）。

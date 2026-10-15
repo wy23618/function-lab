@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 
 (async () => {
+  await fs.mkdir(".runtime/test-results", { recursive: true });
   const browser = await chromium.launch({
     headless: true,
     executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -183,7 +184,7 @@ const fs = require("node:fs/promises");
       error: pageErrors.join("; "),
     });
   await fs.writeFile(
-    "docs/advanced-browser-results.json",
+    ".runtime/test-results/advanced-browser-results.json",
     JSON.stringify({ passed, failures }, null, 2),
   );
   await browser.close();

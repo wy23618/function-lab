@@ -2,6 +2,7 @@ const { chromium } = require("playwright");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 (async () => {
+  fs.mkdirSync(".runtime/test-results", { recursive: true });
   const browser = await chromium.launch({
     headless: true,
     executablePath: "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -50,13 +51,13 @@ const fs = require("node:fs");
   assert.equal((await stored()).at(-1).bindings.u.parameters.m, 3);
   passed.push("composition survives persistence");
   await page.locator(".function-item").nth(3).click();
-  await page.screenshot({ path: "docs/input.png", fullPage: true });
+  await page.screenshot({ path: ".runtime/test-results/input.png", fullPage: true });
   await page.setViewportSize({width:390,height:844});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true);
   passed.push("mobile parameter layout without horizontal overflow");
   assert.deepEqual(errors, []);
   fs.writeFileSync(
-    "docs/input-browser-results.json",
+    ".runtime/test-results/input-browser-results.json",
     JSON.stringify({ passed, errors }, null, 2),
   );
   console.log(JSON.stringify({ passed, errors }));

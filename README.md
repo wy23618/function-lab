@@ -48,7 +48,7 @@ npm run build
 
 `src/services` 保存解析、采样、变换、反函数、分析、几何和持久化服务；`src/components` 保存画布、列表和键盘；`src/types` 统一模型；`src/tests` 保存数学和回归验收。
 
-浏览器验收脚本位于 `scripts`。开发服务启动后运行 `node scripts/browser-check.cjs` 和 `node scripts/advanced-browser-check.cjs`。脚本使用 Playwright；可设置 `NODE_PATH` 指向带有 Playwright 的环境，默认测试本机 Chrome。结果记录在 `docs`，进度与验收覆盖见 `docs/DEVELOPMENT_STATE.md`、`docs/TASKS.md`、`docs/ACCEPTANCE.md`。
+浏览器验收脚本位于 `scripts`。开发服务启动后运行 `node scripts/browser-check.cjs` 和 `node scripts/advanced-browser-check.cjs`。脚本使用 Playwright；可设置 `NODE_PATH` 指向带有 Playwright 的环境，默认测试本机 Chrome。截图与测试报告统一记录在 `.runtime`（不纳入 Git），进度与验收覆盖见 `docs/DEVELOPMENT_STATE.md`、`docs/TASKS.md`、`docs/ACCEPTANCE.md`。
 
 
 支持 `sinx`、`sin2t`、`sincosx`、`e^(Πt)` 等常见简写。自变量可用 `x`、`t`、`m`、`n` 等单个字母，例如 `u(t)=m*t+n`；多个字母时默认优先选 x、再选 t，也可在「变量与参数」中切换，其他字母默认值为 1，可用数字框或滑块调整。常量 e 和 pi 保留为数学常量。
@@ -61,3 +61,11 @@ npm run build
 首页以快速画图为主：紧凑公式输入、可编辑的函数图层列表和大画布。函数变换/分析/几何/历史通过函数 ⋮ 菜单按需打开。桌面为左侧输入、右侧画布；手机竖屏为可拉拽分界的单页工作台；手机横屏为输入侧栏与画布并排。触屏点击输入框展开自带数学键盘，保存后收起。
 
 常用键盘包含数字、x/t、幂、根号、括号、π/e、ln 和三角函数；字母页保留完整大小写字母与 x/t/m/n/a/b 快捷区。函数和符号页保留完整已有输入能力。括号/幂自动补齐，空括号成对删除，右括号可跳过已有闭合，跳出键进入括号外。实时公式预览使用上标与分式，明确复合指数范围。原有数学服务与已有保存数据沿用。
+
+## 目录维护
+
+源码与测试位于 `src/`，启动及验收脚本位于 `scripts/`，长期文档位于 `docs/`。`specification.txt` 为原始需求留档。
+
+`node_modules/` 是运行依赖，通过 `npm ci` 恢复；`dist/` 是双击启动所需构建产物，通过 `npm run build` 重建。`.runtime/` 保存临时截图、日志、调试文件和发布产物，停止本地服务后可以清空。这些目录均不纳入 Git。
+
+当前界面浏览器回归入口为 `npm run test:browser`；其余浏览器脚本保留早期专项验收场景，部分选择器对应旧界面。
