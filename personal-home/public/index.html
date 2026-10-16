@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#edf5ef" />
+    <meta name="description" content="你好，欢迎来到我的小站。很高兴在这里遇见你。" />
+    <title>你好，欢迎来访 · Hellovian</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: #253c31;
+        background: #edf5ef;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        --ink: #253c31;
+        --muted: #718278;
+        --green: #668b70;
+        --line: rgba(68, 101, 76, 0.13);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-width: 320px;
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: 40px 22px;
+        background:
+          radial-gradient(ellipse at 14% 12%, rgba(196, 221, 199, 0.52), transparent 34%),
+          radial-gradient(ellipse at 88% 88%, rgba(211, 228, 211, 0.55), transparent 32%),
+          #edf5ef;
+      }
+
+      main {
+        width: min(100%, 780px);
+        padding: clamp(34px, 7vw, 72px);
+        border: 1px solid rgba(255, 255, 255, 0.88);
+        border-radius: 30px;
+        background: rgba(255, 255, 252, 0.78);
+        box-shadow: 0 24px 80px rgba(49, 83, 57, 0.08), 0 2px 8px rgba(49, 83, 57, 0.04);
+        backdrop-filter: blur(14px);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--green);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+      }
+
+      .eyebrow::before {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #91b99a;
+        box-shadow: 0 0 0 5px rgba(145, 185, 154, 0.14);
+        content: "";
+      }
+
+      h1 {
+        margin: 28px 0 18px;
+        font-size: clamp(42px, 8vw, 68px);
+        font-weight: 650;
+        letter-spacing: -0.055em;
+        line-height: 1.14;
+      }
+
+      h1 span { color: #71967a; }
+
+      .intro {
+        max-width: 520px;
+        margin: 0;
+        color: var(--muted);
+        font-size: clamp(16px, 2.3vw, 19px);
+        line-height: 1.9;
+      }
+
+      .divider {
+        height: 1px;
+        margin: 40px 0 24px;
+        background: var(--line);
+      }
+
+      .projects-label {
+        margin: 0 0 14px;
+        color: #87958b;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.13em;
+      }
+
+      .projects {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .project {
+        min-height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.62);
+        color: var(--ink);
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+      }
+
+      .project:hover {
+        transform: translateY(-2px);
+        border-color: rgba(102, 139, 112, 0.42);
+        background: #fff;
+      }
+
+      .project small {
+        display: block;
+        margin-top: 5px;
+        color: #87958b;
+        font-size: 12px;
+        font-weight: 400;
+      }
+
+      .arrow { color: #86a58b; font-size: 17px; }
+
+      footer {
+        margin-top: 34px;
+        color: #9aa69d;
+        font-size: 12px;
+      }
+
+      @media (max-width: 560px) {
+        main { border-radius: 24px; }
+        .projects { grid-template-columns: 1fr; }
+        .divider { margin-top: 32px; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="eyebrow">A LITTLE CORNER ON THE WEB</div>
+      <h1>你好，<span>欢迎来访。</span></h1>
+      <p class="intro">很高兴在这里遇见你。这里放着我做的一些小项目，愿你今天也有一点轻松、自在的时间。</p>
+
+      <div class="divider"></div>
+      <p class="projects-label">顺便看看</p>
+      <nav class="projects" aria-label="我的项目">
+        <a class="project" href="https://func.hellovian.com/">
+          <span>Function Lab<small>函数可视化实验室</small></span>
+          <span class="arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="project" href="https://vocab.hellovian.com/">
+          <span>Vocabulary<small>英语词汇小工具</small></span>
+          <span class="arrow" aria-hidden="true">↗</span>
+        </a>
+        <div class="project">
+          <span>Foclo<small>微信里的专注小工具</small></span>
+          <span class="arrow" aria-hidden="true">✳</span>
+        </div>
+      </nav>
+      <footer>愿每一次停留，都刚刚好。</footer>
+    </main>
+  </body>
+</html>

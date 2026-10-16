@@ -1,0 +1,12 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "hellovian-home",
+  "compatibility_date": "2026-10-16",
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "hellovian.com", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": "./public"
+  }
+}
