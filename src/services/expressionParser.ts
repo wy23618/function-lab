@@ -2,6 +2,7 @@ import { parse } from "mathjs";
 import type { MathNode } from "mathjs";
 import { ALL_DOMAIN } from "../types/function";
 import type { Domain } from "../types/function";
+import { normalizeMathCharacters } from "../utils/userExpression";
 
 const allowedFunctions = new Set([
   "sin",
@@ -54,14 +55,76 @@ export interface PreparedExpression {
 const declaration = /^([a-zA-Z][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z])\s*\)\s*=\s*/;
 const shorthandNames = [...allowedFunctions]
   .filter((n) => !["min", "max"].includes(n))
-  .concat("ln")
+  .concat("ln", "lg", "log10", "log2")
   .sort((a, b) => b.length - a.length);
+function groupEnd(text: string, opening: number): number | undefined {
+  let depth = 0;
+  for (let i = opening; i < text.length; i++) {
+    if (text[i] === "(") depth++;
+    if (text[i] === ")" && --depth === 0) return i + 1;
+  }
+  return undefined;
+}
+
+function expandCompositionNotation(text: string): string {
+  let result = "";
+  for (let i = 0; i < text.length;) {
+    const match =
+      (i === 0 || !/[A-Za-z0-9_]/.test(text[i - 1])) &&
+      text
+        .slice(i)
+        .match(
+          /^(?:\(\s*([A-Za-z][A-Za-z0-9_]*(?:\s*∘\s*[A-Za-z][A-Za-z0-9_]*)+)\s*\)|([A-Za-z][A-Za-z0-9_]*(?:\s*∘\s*[A-Za-z][A-Za-z0-9_]*)+))\s*\(/,
+        );
+    if (match) {
+      const opening = i + match[0].length - 1;
+      const end = groupEnd(text, opening);
+      if (end !== undefined) {
+        const argument = expandCompositionNotation(
+          text.slice(opening + 1, end - 1),
+        );
+        result += (match[1] || match[2])
+          .split(/\s*∘\s*/)
+          .reduceRight((value, name) => `${name}(${value})`, argument);
+        i = end;
+        continue;
+      }
+    }
+    result += text[i++];
+  }
+  return result;
+}
+
+function expandLogAliases(text: string, protectedNames: string[]): string {
+  let result = "";
+  for (let i = 0; i < text.length;) {
+    const match =
+      (i === 0 || !/[A-Za-z0-9_]/.test(text[i - 1])) &&
+      text.slice(i).match(/^(lg|log10|log2)\s*\(/);
+    if (match && !protectedNames.includes(match[1])) {
+      const opening = i + match[0].length - 1;
+      const end = groupEnd(text, opening);
+      if (end !== undefined) {
+        result += `log(${expandLogAliases(text.slice(opening + 1, end - 1), protectedNames)},${match[1] === "log2" ? 2 : 10})`;
+        i = end;
+        continue;
+      }
+    }
+    result += text[i++];
+  }
+  return result;
+}
+
 // A compact call consumes one powered atom, including an implicit coefficient.
 // Explicit operators and sums remain outside: sin2t + 1 is sin(2t) + 1.
 function expandCompactCalls(text: string): string {
   function atom(start: number): { text: string; end: number } | undefined {
     let cursor = start;
     while (/\s/.test(text[cursor] ?? "") && cursor < text.length) cursor++;
+    if (text[cursor] === "(") {
+      const end = groupEnd(text, cursor);
+      if (end !== undefined) return { text: text.slice(cursor, end), end };
+    }
     const name = shorthandNames.find((n) => text.startsWith(n, cursor));
     if (name) {
       let opening = cursor + name.length;
@@ -96,6 +159,22 @@ function expandCompactCalls(text: string): string {
     const name =
       (i === 0 || !/[a-zA-Z_]/.test(text[i - 1])) &&
       shorthandNames.find((n) => text.startsWith(n, i));
+    if (name) {
+      const power = text
+        .slice(i + name.length)
+        .match(/^\s*\^\s*(?:\(\s*(\d+)\s*\)|(\d+))(?![\d.])/);
+      if (power) {
+        const argument = atom(i + name.length + power[0].length);
+        if (argument) {
+          const call = argument.text.startsWith("(")
+            ? `${name}${argument.text}`
+            : `${name}(${argument.text})`;
+          result += `(${call})^(${power[1] || power[2]})`;
+          i = argument.end;
+          continue;
+        }
+      }
+    }
     const identifierCall = text.slice(i).match(/^([a-zA-Z][a-zA-Z0-9_]*)\s*\(/);
     const preserveAlias =
       name &&
@@ -119,10 +198,23 @@ function expandCompactCalls(text: string): string {
   return result;
 }
 
-export function normalizeExpression(input: string): string {
+export function normalizeExpression(
+  input: string,
+  knownFunctionNames: string[] = [],
+  variable?: string,
+): string {
   if (input.length > 4000)
     throw new Error("表达式过长，请拆分为多个函数或较短的变换链。");
-  let text = input
+  const characters = normalizeMathCharacters(input);
+  const declaredVariable = characters.trim().match(declaration)?.[2];
+  const builtinNames = new Set([
+    ...allowedFunctions,
+    "ln",
+    "lg",
+    "log10",
+    "log2",
+  ]);
+  let text = characters
     .trim()
     .replace(declaration, "")
     .replace(/^y\s*=\s*/i, "")
@@ -130,6 +222,20 @@ export function normalizeExpression(input: string): string {
     .replace(/[−–]/g, "-")
     .replace(/[×·]/g, "*")
     .replace(/÷/g, "/");
+  text = text.replace(/[A-Za-z][A-Za-z0-9_]*/g, (name) => {
+    if (knownFunctionNames.includes(name)) return name;
+    const lower = name.toLowerCase();
+    return builtinNames.has(lower) || lower === "pi" ? lower : name;
+  });
+  const productVariables = new Set(
+    ["x", "t", declaredVariable, variable].filter(Boolean),
+  );
+  text = text.replace(/\b([A-Za-z])\s*\(/g, (match, name) =>
+    productVariables.has(name) && !knownFunctionNames.includes(name)
+      ? `${name}*(`
+      : match,
+  );
+  text = expandCompositionNotation(text);
   // Classroom shorthand e^πx denotes an exponent πx; explicit * retains standard precedence.
   text = text.replace(
     /[⁻⁰¹²³⁴⁵⁶⁷⁸⁹]+/g,
@@ -139,7 +245,7 @@ export function normalizeExpression(input: string): string {
     /\be\s*\^\s*([+-]?pi\s*[a-zA-Z]\b(?:\^\([^()]+\)|\^-?\d+(?:\.\d+)?)?)(?!\s*\^)/g,
     "e^($1)",
   );
-  text = expandCompactCalls(text);
+  text = expandLogAliases(expandCompactCalls(text), knownFunctionNames);
   // Constants next to a letter denote multiplication, including πt and πm.
   text = text
     .replace(/(?<![a-zA-Z_])pi(?=[a-zA-Z]|\()/g, "pi*")
@@ -199,7 +305,10 @@ function validate(node: MathNode, context: ExpressionContext): void {
         throw new Error("不支持的运算");
     } else if (child.type === "FunctionNode") {
       const name = (value.fn as MathNode & { name?: string })?.name;
-      if (!name || !names.has(name)) throw new Error("不支持的函数调用");
+      if (!name || !names.has(name))
+        throw new Error(
+          `找不到函数 ${name || ""}，请检查名称或先添加这个函数。`,
+        );
       const count = value.args?.length ?? 0;
       if (
         count < 1 ||
@@ -228,8 +337,8 @@ export function prepareExpression(
   input: string,
   knownFunctionNames: string[] = [],
 ): PreparedExpression {
-  const declared = input.trim().match(declaration);
-  const expression = normalizeExpression(input);
+  const declared = normalizeMathCharacters(input).trim().match(declaration);
+  const expression = normalizeExpression(input, knownFunctionNames);
   const node = parseExpression(expression);
   const free: string[] = [];
   const usedFunctions: string[] = [];
@@ -284,7 +393,11 @@ export function compileExpression(
   input: string,
   context?: ExpressionContext,
 ): (x: number) => number {
-  const normalized = normalizeExpression(input);
+  const normalized = normalizeExpression(
+    input,
+    Object.keys(context?.functions ?? {}),
+    context?.variable,
+  );
   const prepared = context ? undefined : prepareExpression(input);
   const actual = context ?? prepared!;
   const variable = actual.variable ?? "x";

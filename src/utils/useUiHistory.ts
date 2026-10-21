@@ -17,7 +17,7 @@ const base: UiSnapshot = {
   palette: false,
   landscape: false,
 };
-const mainTools = new Set(["translate", "symmetry", "compose", "more"]);
+const mainTools = new Set(["translate", "symmetry", "compose", "analysis", "more"]);
 export function uiLayers(s: UiSnapshot): string[] {
   return [
     ...(s.landscape ? ["landscape"] : []),

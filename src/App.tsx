@@ -11,6 +11,10 @@ import {
   X,
   Scan,
   Smartphone,
+  Search,
+  Check,
+  Keyboard,
+  ChevronDown,
 } from "lucide-react";
 import MathFormula from "./components/MathFormula";
 import type { CSSProperties } from "react";
@@ -47,6 +51,7 @@ import { pointLabel, nextPointLabel } from "./utils/pointLabels";
 import GraphCanvas from "./components/GraphCanvas";
 import MathKeyboard from "./components/MathKeyboard";
 import FunctionList from "./components/FunctionList";
+import CommandPalette from "./components/CommandPalette";
 
 import {
   prepareFunction,
@@ -58,10 +63,18 @@ import { useUiHistory } from "./utils/useUiHistory";
 import type { AxisLabelMode } from "./utils/piTicks";
 import { editMathInput } from "./utils/mathInput";
 import type { MathInputAction } from "./utils/mathInput";
+import {
+  completeUserExpression,
+  normalizeMathCharacters,
+} from "./utils/userExpression";
+import {
+  defaultView,
+  loadWorkspace,
+  workspaceKey,
+} from "./services/workspaceStore";
 
 const storageKey = "function-lab-v1";
 
-const defaultView: Viewport = { cx: 0, cy: 0, scale: 55 };
 const initial = () => {
   try {
     const raw = localStorage.getItem(storageKey);
@@ -76,41 +89,26 @@ const initial = () => {
     { ...makeFunction("2*x+1", 2), color: "#e35450" },
   ];
 };
-const commands = [
-  ["y", "关于 Y 轴对称"],
-  ["x", "关于 X 轴对称"],
-  ["origin", "关于原点对称"],
-  ["diag", "关于 y=x 对称"],
-  ["anti", "关于 y=−x 对称"],
-  ["inverse", "反函数"],
-  ["absY", "|f(x)|"],
-  ["absX", "f(|x|)"],
-  ["absBoth", "|f(|x|)|"],
-  ["negAbs", "−|f(x)|"],
-  ["parity", "奇偶性"],
-  ["roots", "零点"],
-  ["intersections", "交点"],
-  ["derivative", "导数"],
-  ["tangent", "切线"],
-  ["normal", "法线"],
-  ["domain", "定义域"],
-  ["fit", "适应全部图像"],
-] as const;
 export default function App() {
+  const [savedWorkspace] = useState(loadWorkspace);
   const [functions, setFunctions] = useState<FunctionDefinition[]>(initial);
   const [selected, setSelected] = useState(() => functions[0]?.id || "");
-  const [viewport, setViewport] = useState<Viewport>(defaultView);
+  const [viewport, setViewport] = useState<Viewport>(savedWorkspace.viewport);
   const [expression, setExpression] = useState("");
+  const [composing, setComposing] = useState(false);
+  const [deletedName, setDeletedName] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const [caretPosition, setCaretPosition] = useState(0);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+  const [inputError, setInputError] = useState("");
   const [preview, setPreview] = useState<FunctionDefinition | null>(null);
   const [panel, setPanel] = useState(false);
   const [toolOverlays, setToolOverlays] = useState<FunctionDefinition[]>([]);
   const [comparison, setComparison] = useState("");
   const [toolMode, setToolMode] = useState("more");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const [orientationHint, setOrientationHint] = useState("");
   const [manualLandscape, setManualLandscape] = useState(false);
   useEffect(() => {
@@ -129,13 +127,24 @@ export default function App() {
     };
   }, [manualLandscape]);
   const [helpOpen, setHelpOpen] = useState(false);
+  useEffect(() => {
+    if (!settingsOpen && !helpOpen) return;
+    const dismiss = (event: PointerEvent) => {
+      if (!headerRef.current?.contains(event.target as Node)) {
+        setSettingsOpen(false);
+        setHelpOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", dismiss);
+    return () => document.removeEventListener("pointerdown", dismiss);
+  }, [settingsOpen, helpOpen]);
   const [editingFunctionId, setEditingFunctionId] = useState("");
   const [graphRatio, setGraphRatio] = useState(() => {
     try {
       const saved = Number(localStorage.getItem("function-lab-graph-ratio"));
       if (saved >= 0.25 && saved <= 0.85) return saved;
     } catch {}
-    return 0.6;
+    return 0.48;
   });
   const [graphResizing, setGraphResizing] = useState(false);
   const graphResize = useRef<{
@@ -152,7 +161,6 @@ export default function App() {
     }, 200);
     return () => clearTimeout(timer);
   }, [graphRatio]);
-  const [listExpanded, setListExpanded] = useState(true);
   const [keyboard, setKeyboard] = useState(false);
   const [touchLayout, setTouchLayout] = useState(
     () =>
@@ -178,9 +186,10 @@ export default function App() {
     observer.observe(inputAreaRef.current);
     return () => observer.disconnect();
   }, []);
-  const [grid, setGrid] = useState(true);
-  const [axes, setAxes] = useState(true);
-  const [ticks, setTicks] = useState(true);
+  const [showLegend, setShowLegend] = useState(false);
+  const [grid, setGrid] = useState(savedWorkspace.grid);
+  const [axes, setAxes] = useState(savedWorkspace.axes);
+  const [ticks, setTicks] = useState(savedWorkspace.ticks);
   const [axisLabels, setAxisLabels] = useState<AxisLabelMode>(() => {
     try {
       const value = localStorage.getItem("function-lab-axis-labels");
@@ -188,12 +197,39 @@ export default function App() {
     } catch {}
     return "auto";
   });
-  const [points, setPoints] = useState<GraphPoint[]>([]);
-  const [refs, setRefs] = useState<{ a: number; b: number; c: number }[]>([]);
+  const [points, setPoints] = useState<GraphPoint[]>(savedWorkspace.points);
+  const [refs, setRefs] = useState<{ a: number; b: number; c: number }[]>(
+    savedWorkspace.refs,
+  );
+  useEffect(() => {
+    const save = () => {
+      try {
+        localStorage.setItem(
+          workspaceKey,
+          JSON.stringify({
+            version: 1,
+            viewport,
+            points,
+            refs,
+            grid,
+            axes,
+            ticks,
+          }),
+        );
+      } catch {
+        setNotice("工作台保存失败，可通过设置导出项目备份。");
+      }
+    };
+    const timer = setTimeout(save, 250);
+    window.addEventListener("pagehide", save);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("pagehide", save);
+    };
+  }, [viewport, points, refs, grid, axes, ticks]);
   const [undoStack, setUndo] = useState<FunctionDefinition[][]>([]);
   const [redoStack, setRedo] = useState<FunctionDefinition[][]>([]);
   const [palette, setPalette] = useState(false);
-  const [query, setQuery] = useState("");
   const operationBefore = useRef<{
     points: GraphPoint[];
     refs: { a: number; b: number; c: number }[];
@@ -239,6 +275,7 @@ export default function App() {
   function commit(next: FunctionDefinition[]) {
     const resolved = refreshFunctionBindings(withFunctionNames(next));
     validateFunctions(resolved);
+    setDeletedName("");
     setUndo((u) => [...u.slice(-49), functions]);
     setRedo([]);
     setFunctions(resolved);
@@ -246,6 +283,37 @@ export default function App() {
     setToolOverlays((overlays) => (overlays.length ? [] : overlays));
     setComparison("");
     setError("");
+  }
+  function clearFunctions() {
+    if (!functions.length) return;
+    commit([]);
+    setSelected("");
+    setEditingFunctionId("");
+    setExpression("");
+    setInputError("");
+    setKeyboard(false);
+    setPanel(false);
+    setSettingsOpen(false);
+    setNotice("已清空全部函数，可点撤销恢复。");
+  }
+  function deleteFunction(id: string) {
+    guarded(() => {
+      const index = functions.findIndex((fn) => fn.id === id);
+      const target = functions[index];
+      if (!target) return;
+      if (target.locked) throw new Error("请先解锁函数。");
+      const next = functions.filter((fn) => fn.id !== id);
+      commit(next);
+      if (current?.id === id)
+        setSelected(next[Math.min(index, next.length - 1)]?.id || "");
+      if (editingFunctionId === id) {
+        setEditingFunctionId("");
+        setExpression("");
+        setKeyboard(false);
+      }
+      setDeletedName(target.alias || target.name);
+      setNotice("");
+    });
   }
   function add(fn: FunctionDefinition) {
     const result = withFunctionNames([
@@ -268,10 +336,15 @@ export default function App() {
   }
   function undo() {
     if (!undoStack.length) return;
+    setDeletedName("");
     setRedo((r) => [...r, functions]);
     setFunctions(undoStack.at(-1)!);
     setUndo((u) => u.slice(0, -1));
     setPreview(null);
+    setToolOverlays([]);
+    setComparison("");
+    setError("");
+    setNotice("已撤销上一步函数操作。");
   }
   async function enterLandscape() {
     setSettingsOpen(false);
@@ -313,6 +386,10 @@ export default function App() {
     setFunctions(redoStack.at(-1)!);
     setRedo((r) => r.slice(0, -1));
     setPreview(null);
+    setToolOverlays([]);
+    setComparison("");
+    setError("");
+    setNotice("已重做函数操作。");
   }
   useEffect(() => {
     try {
@@ -324,7 +401,7 @@ export default function App() {
   function prepareInputDraft() {
     const previous = functions.find((fn) => fn.id === editingFunctionId);
     const candidate = prepareFunction(
-      expression,
+      completeUserExpression(expression).text,
       previous ? functions.indexOf(previous) : functions.length,
       functions.filter((fn) => fn.id !== previous?.id),
       previous,
@@ -337,60 +414,82 @@ export default function App() {
     return resolved.find((fn) => fn.id === candidate.id)!;
   }
   const draft = useMemo(() => {
-    if (!expression.trim()) return null;
+    if (
+      !expression.trim() ||
+      composing ||
+      functions.find((fn) => fn.id === editingFunctionId)?.currentExpression ===
+        expression
+    )
+      return null;
     try {
       return {
         ...prepareInputDraft(),
         id: "draft",
         name: "输入预览",
-        color: "#54899a",
+        color:
+          functions.find((fn) => fn.id === editingFunctionId)?.color ||
+          "#54899a",
         lineStyle: "dashed" as const,
       };
     } catch {
       return null;
     }
-  }, [expression, functions, editingFunctionId]);
+  }, [expression, functions, editingFunctionId, composing]);
   useEffect(() => {
-    const openGroups = [...expression].reduce(
+    const inputText = normalizeMathCharacters(expression);
+    const openGroups = [...inputText].reduce(
       (n, c) => n + (c === "(" ? 1 : c === ")" ? -1 : 0),
       0,
     );
     const unfinished =
-      /\(\s*\)|[+*/^,=−-]\s*$/.test(expression) || openGroups > 0;
-    if (!expression.trim() || unfinished) {
-      setError("");
+      /\(\s*\)|[+*/^,=−-]\s*$/.test(inputText) || openGroups > 0;
+    if (!expression.trim() || unfinished || composing) {
+      setInputError("");
       return;
     }
     const timer = setTimeout(() => {
       try {
         prepareInputDraft();
-        setError("");
+        setInputError("");
       } catch (e) {
-        setError(e instanceof Error ? e.message : "请检查表达式。");
+        setInputError(e instanceof Error ? e.message : "请检查表达式。");
       }
     }, 250);
     return () => clearTimeout(timer);
-  }, [expression, functions, editingFunctionId]);
+  }, [expression, functions, editingFunctionId, composing]);
   function addInput() {
-    guarded(() => {
+    if (composing) return;
+    try {
+      const preparedInput = completeUserExpression(expression);
       const previous = functions.find((f) => f.id === editingFunctionId);
       if (previous) {
         if (previous.locked) throw new Error("请先解锁函数。");
         const next = prepareFunction(
-          expression,
+          preparedInput.text,
           functions.indexOf(previous),
           functions.filter((f) => f.id !== previous.id),
           previous,
         );
         commit(functions.map((f) => (f.id === previous.id ? next : f)));
-      } else add(prepareFunction(expression, functions.length, functions));
+        setNotice(`已保存 ${previous.alias || previous.name}。`);
+      } else
+        add(prepareFunction(preparedInput.text, functions.length, functions));
+      if (preparedInput.completion)
+        setNotice(
+          `已补齐末尾的 ${preparedInput.completion}，${previous ? "函数已保存" : "函数已添加"}。`,
+        );
       setExpression("");
       setEditingFunctionId("");
       if (touchLayout) {
         setKeyboard(false);
         inputRef.current?.blur();
       }
-    });
+      setInputError("");
+    } catch (failure) {
+      setInputError(
+        failure instanceof Error ? failure.message : "请检查输入的公式。",
+      );
+    }
   }
 
   function resizeGraph(ratio: number) {
@@ -405,6 +504,7 @@ export default function App() {
     if (touchInput && !touchLayout) el?.blur();
     const next = editMathInput(expression, start, end, action);
     setExpression(next.text);
+    setInputError("");
     setCaretPosition(next.start);
     requestAnimationFrame(() => {
       if (!touchInput) el?.focus({ preventScroll: true });
@@ -428,17 +528,15 @@ export default function App() {
       xmax = xs[hi],
       ymin = ys[lo],
       ymax = ys[hi];
-    const rect = document
-      .querySelector(".graph-canvas-wrap")
-      ?.getBoundingClientRect();
+    const plot = document.querySelector<HTMLElement>(".graph-canvas-wrap");
     setViewport({
       cx: (xmin + xmax) / 2,
       cy: (ymin + ymax) / 2,
       scale: Math.max(
         1e-12,
         Math.min(
-          (rect?.width || 800) / Math.max(2, xmax - xmin) / 1.15,
-          (rect?.height || 600) / Math.max(2, ymax - ymin) / 1.15,
+          (plot?.clientWidth || 800) / Math.max(2, xmax - xmin) / 1.15,
+          (plot?.clientHeight || 600) / Math.max(2, ymax - ymin) / 1.15,
         ),
       ),
     });
@@ -508,8 +606,12 @@ export default function App() {
         ].includes(key)
       )
         throw new Error("该分析需要显函数，请选择左侧的原函数。");
-      const min = viewport.cx - 8,
-        max = viewport.cx + 8;
+      const halfWidth =
+        (document.querySelector<HTMLElement>(".graph-canvas-wrap")
+          ?.clientWidth || 880) /
+        (2 * viewport.scale);
+      const min = viewport.cx - halfWidth,
+        max = viewport.cx + halfWidth;
       if (key === "parity") {
         const result = parity(current);
         setPreview(null);
@@ -561,9 +663,6 @@ export default function App() {
       if (["derivative", "tangent", "normal"].includes(key)) {
         const m = slope(current, x0),
           y = evaluateFunction(current, x0);
-        if (!Number.isFinite(m) || !Number.isFinite(y))
-          throw new Error("该点没有可用的有限导数，可能超出定义域或不可导。");
-        setPoints((p) => [...p, { x: x0, y }]);
         if (key === "derivative") {
           const d = derived(
             current,
@@ -580,12 +679,19 @@ export default function App() {
               source: current,
             },
           ];
+          if (Number.isFinite(m) && Number.isFinite(y))
+            setPoints((p) => [...p, { x: x0, y }]);
           retain(d);
           setNotice(
-            `${current.variable || "x"}₀=${x0}，f(${current.variable || "x"}₀)≈${y.toFixed(6)}，f′(${current.variable || "x"}₀)≈${m.toFixed(6)}（数值估计）。`,
+            Number.isFinite(m) && Number.isFinite(y)
+              ? `${current.variable || "x"}₀=${x0}，f(${current.variable || "x"}₀)≈${y.toFixed(6)}，f′(${current.variable || "x"}₀)≈${m.toFixed(6)}（数值估计）。`
+              : "已生成导函数；当前切点处无有限导数，该点不绘制。",
           );
           return;
         }
+        if (!Number.isFinite(m) || !Number.isFinite(y))
+          throw new Error("该点没有可用的有限导数，可能超出定义域或不可导。");
+        setPoints((p) => [...p, { x: x0, y }]);
         if (key === "normal" && Math.abs(m) < 1e-10) {
           setRefs([{ a: 1, b: 0, c: -x0 }]);
           setNotice(`法线为 x=${x0}。`);
@@ -618,12 +724,16 @@ export default function App() {
         setPalette((p) => !p);
       }
       if (e.key === "Escape") {
-        setPalette(false);
-        restoreOperation();
-        setPanel(false);
-        setSettingsOpen(false);
-        setHelpOpen(false);
-        setKeyboard(false);
+        if (palette) setPalette(false);
+        else if (settingsOpen) setSettingsOpen(false);
+        else if (helpOpen) setHelpOpen(false);
+        else if (keyboard) {
+          setKeyboard(false);
+          inputRef.current?.blur();
+        } else if (panel || preview) {
+          restoreOperation();
+          setPanel(false);
+        }
       }
       if (!editing && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
         e.preventDefault();
@@ -649,6 +759,8 @@ export default function App() {
     setNotice("");
   }
   function selectFunction(id: string) {
+    setKeyboard(false);
+    inputRef.current?.blur();
     if (id === current?.id) return;
     setToolOverlays((overlays) => (overlays.length ? [] : overlays));
     setComparison("");
@@ -743,11 +855,19 @@ export default function App() {
       className={`app-shell ${keyboard && touchLayout ? "math-keyboard-open" : ""} ${manualLandscape ? "manual-landscape" : ""}`}
       style={{ "--math-dock-height": `${dockHeight}px` } as CSSProperties}
     >
-      <header className="app-header">
+      <header className="app-header" ref={headerRef}>
         <div className="brand">
           <strong>函数实验室</strong>
         </div>
         <div className="header-actions">
+          <button
+            className="search-tools"
+            aria-label="搜索工具"
+            title="搜索工具 Ctrl+K"
+            onClick={() => setPalette(true)}
+          >
+            <Search size={18} />
+          </button>
           <button
             aria-label="撤销"
             title="撤销 Ctrl+Z"
@@ -766,6 +886,7 @@ export default function App() {
           </button>
           <button
             aria-label="使用帮助"
+            aria-expanded={helpOpen}
             onClick={() => {
               setHelpOpen(!helpOpen);
               setSettingsOpen(false);
@@ -805,7 +926,13 @@ export default function App() {
         {helpOpen && (
           <div className="header-popover">
             <strong>快速画图</strong>
-            <p>输入公式即可预览，回车或点添加保留。</p>
+            <p>
+              输入公式即可预览，回车或点添加保留。支持中文括号、全角符号、2x、sinx、sin²x、lg(x)；漏写末尾右括号会显示补齐后的预览。
+            </p>
+            <p>
+              复合写 f(g(x)) 或 (f∘g)(x)，表示先算 g 再算 f；相乘请写
+              f(x)*g(x)。log 与 ln 都是自然对数，lg 是以 10 为底。
+            </p>
             <p>拖动画布平移，滚轮或双指缩放。拉拽分界条调整图像区域。</p>
             <p>
               点曲线或左上角名称选中函数，再用图像底部工具条操作。长按画布可标记坐标。
@@ -816,6 +943,14 @@ export default function App() {
         {settingsOpen && (
           <div className="header-popover settings-popover">
             <strong>画布与项目</strong>
+            <label>
+              <input
+                type="checkbox"
+                checked={showLegend}
+                onChange={(e) => setShowLegend(e.target.checked)}
+              />
+              画布公式目录
+            </label>
             <label>
               <input
                 type="checkbox"
@@ -867,6 +1002,9 @@ export default function App() {
             >
               清除观察标记
             </button>
+            <button disabled={!functions.length} onClick={clearFunctions}>
+              清空全部函数
+            </button>
             <button onClick={exportProject}>导出项目</button>
             <label className="button-label">
               导入项目
@@ -904,16 +1042,24 @@ export default function App() {
               className="input-form"
             >
               {editingFunctionId && (
-                <button
-                  type="button"
-                  className="cancel-edit"
-                  onClick={() => {
-                    setEditingFunctionId("");
-                    setExpression("");
-                  }}
-                >
-                  取消编辑
-                </button>
+                <div className="composer-context">
+                  <span>
+                    编辑{" "}
+                    {functions.find((fn) => fn.id === editingFunctionId)
+                      ?.alias || "函数"}
+                  </span>
+                  <button
+                    type="button"
+                    className="cancel-edit"
+                    onClick={() => {
+                      setEditingFunctionId("");
+                      setExpression("");
+                      setInputError("");
+                    }}
+                  >
+                    取消编辑
+                  </button>
+                </div>
               )}
               <label htmlFor="function-input">
                 {editingFunctionId ? "编辑公式" : "输入公式"}
@@ -927,16 +1073,20 @@ export default function App() {
                   inputMode={touchLayout ? "none" : undefined}
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder="sinx / e^(πx) / f(t)=m*t+n"
+                  placeholder="例如 sin(x) 或 a*x^2"
                   value={expression}
                   onChange={(e) => {
                     setExpression(e.target.value);
+                    setInputError("");
                     setCaretPosition(e.target.selectionStart ?? 0);
                   }}
                   onSelect={(e) =>
                     setCaretPosition(e.currentTarget.selectionStart ?? 0)
                   }
+                  onCompositionStart={() => setComposing(true)}
+                  onCompositionEnd={() => setComposing(false)}
                   onKeyDown={(e) => {
+                    if (e.nativeEvent.isComposing || composing) return;
                     if (
                       !e.ctrlKey &&
                       !e.metaKey &&
@@ -953,6 +1103,13 @@ export default function App() {
                     }
                   }}
                   onFocus={() => {
+                    if (
+                      !keyboard &&
+                      (panel || preview || toolOverlays.length)
+                    ) {
+                      restoreOperation();
+                      setPanel(false);
+                    }
                     if (touchLayout) setKeyboard(true);
                   }}
                   onClick={() => {
@@ -976,75 +1133,94 @@ export default function App() {
                   className={`formula-preview ${exponentEditing ? "is-power-editing" : ""}`}
                   aria-label="公式排版预览"
                 >
-                  <MathFormula expression={expression} />
+                  <MathFormula
+                    expression={draft?.currentExpression || expression}
+                    knownFunctionNames={functions.flatMap((fn) =>
+                      fn.alias ? [fn.alias] : [],
+                    )}
+                  />
                   <span className="editing-hint">
-                    {exponentEditing ? "指数 · 点跳出返回底数" : "实时公式"}
+                    {completeUserExpression(expression).completion && draft
+                      ? "已补齐右括号"
+                      : exponentEditing
+                        ? "指数 · 点跳出返回底数"
+                        : draft && draft.currentExpression !== expression
+                          ? "已识别"
+                          : "实时公式"}
                   </span>
                 </div>
               )}
-              {error && expression && (
+              {inputError && expression && (
                 <p className="input-error" role="alert">
-                  {error}
+                  {inputError}
                 </p>
               )}
-              <button className="add-function" disabled={!expression.trim()}>
-                <Plus size={19} />
-                {editingFunctionId ? "保存函数" : "添加函数"}
-              </button>
-              <div className="input-hint">
-                {touchLayout
-                  ? "输入即预览 · 点添加保留"
-                  : "输入即预览 · Enter 添加"}
-              </div>
             </form>
-            {!keyboard && (
+            <div className="composer-controls">
               <button
                 className="keyboard-toggle"
-                onClick={() => setKeyboard(true)}
-              >
-                打开数学键盘 ⌃
-              </button>
-            )}
-            {keyboard && (
-              <MathKeyboard
-                edit={editInput}
-                onAdd={addInput}
-                canAdd={!!expression.trim()}
-                addLabel={editingFunctionId ? "保存" : "添加"}
-                onClose={() => {
-                  setKeyboard(false);
-                  inputRef.current?.blur();
+                aria-label={keyboard ? "收起数学键盘" : "打开数学键盘"}
+                aria-expanded={keyboard}
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  setKeyboard(!keyboard);
+                  if (keyboard) inputRef.current?.blur();
                 }}
-              />
-            )}
+              >
+                {keyboard ? <ChevronDown size={15} /> : <Keyboard size={15} />}
+                {keyboard ? "收起键盘" : "数学键盘"}
+              </button>
+              <button
+                className="composer-submit"
+                disabled={!expression.trim() || composing}
+                onPointerDown={(event) => event.preventDefault()}
+                onClick={addInput}
+                aria-label={editingFunctionId ? "保存函数" : "添加函数"}
+              >
+                {editingFunctionId ? <Check size={15} /> : <Plus size={15} />}
+                {editingFunctionId ? "保存" : "添加"}
+              </button>
+            </div>
+            {keyboard && <MathKeyboard edit={editInput} />}
           </div>
           <div className="function-list-heading">
-            <button
-              className="mobile-list-toggle"
-              aria-expanded={listExpanded}
-              onClick={() => setListExpanded(!listExpanded)}
-            >
-              函数列表（{functions.length}）{" "}
-              <span>{listExpanded ? "收起 ⌃" : "展开 ⌄"}</span>
-            </button>
-            <button
-              className="clear-functions"
-              disabled={!functions.length}
-              onClick={() => {
-                commit([]);
-                setSelected("");
-                setEditingFunctionId("");
-                if (editingFunctionId) setExpression("");
-                setPanel(false);
-                setListExpanded(true);
-              }}
-            >
-              全部清空
-            </button>
+            <span className="list-heading-title">
+              函数 <span className="function-count">{functions.length}</span>
+            </span>
+            <div className="function-list-heading-actions">
+              {functions.some((fn) => !fn.visible) && (
+                <button
+                  className="show-all-functions"
+                  onClick={() =>
+                    commit(functions.map((fn) => ({ ...fn, visible: true })))
+                  }
+                >
+                  显示全部
+                </button>
+              )}
+              <button
+                className="clear-functions"
+                aria-label="清空全部函数"
+                disabled={!functions.length}
+                onClick={clearFunctions}
+              >
+                全部清空
+              </button>
+            </div>
           </div>
-          <div
-            className={`function-list-section ${listExpanded ? "" : "collapsed"}`}
-          >
+          {deletedName && (
+            <div className="function-delete-feedback" role="status">
+              <span>已删除 {deletedName}</span>
+              <button onClick={undo}>撤销</button>
+              <button
+                aria-label="关闭删除提示"
+                onClick={() => setDeletedName("")}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
+          <div className="function-list-section">
             {!functions.length && (
               <div className="function-empty">
                 输入公式，开始画图。
@@ -1058,6 +1234,7 @@ export default function App() {
               selected={current?.id || ""}
               onSelect={selectFunction}
               onEdit={(fn) => {
+                const showKeyboard = touchLayout || keyboard;
                 selectFunction(fn.id);
                 setPreview(null);
                 setToolOverlays((overlays) =>
@@ -1066,7 +1243,8 @@ export default function App() {
                 setComparison("");
                 setEditingFunctionId(fn.id);
                 setExpression(fn.currentExpression);
-                setKeyboard(touchLayout);
+                setInputError("");
+                setKeyboard(showKeyboard);
                 requestAnimationFrame(() => {
                   inputRef.current?.focus({ preventScroll: true });
                   inputRef.current?.setSelectionRange(
@@ -1089,9 +1267,7 @@ export default function App() {
                   commit(functions.map((f) => (f.id === fn.id ? fn : f))),
                 );
               }}
-              onDelete={(id) =>
-                guarded(() => commit(functions.filter((f) => f.id !== id)))
-              }
+              onDelete={deleteFunction}
               onCopy={(fn) =>
                 guarded(() =>
                   add({
@@ -1107,20 +1283,19 @@ export default function App() {
               }
             />
           </div>
-          <div className="local-note">
-            本地自动保存
-            <br />
-            核心功能无需网络或账号
-          </div>
         </aside>
-        <section className="graph-panel">
+        <section
+          className={`graph-panel ${panel && !keyboard ? "tools-open" : ""}`}
+          aria-label="函数绘图工作台"
+        >
           <div className="graph-stage">
             <GraphCanvas
               functions={displayed}
               legendFunctions={functions}
+              showLegend={showLegend}
               selected={current?.id}
               onSelect={selectFunction}
-              overlayKey={`${panel}|${toolMode}|${keyboard}|${current?.id}|${error}|${notice}|${preview?.id}`}
+              overlayKey={`${showLegend}|${panel}|${toolMode}|${keyboard}|${current?.id}|${error}|${notice}|${preview?.id}`}
               viewport={viewport}
               onViewportChange={setViewport}
               grid={grid}
@@ -1140,88 +1315,6 @@ export default function App() {
               }
               referenceLines={refs}
             />
-            {current && (
-              <FunctionActions
-                hidden={keyboard}
-                current={current}
-                functions={functions}
-                mode={toolMode}
-                open={panel}
-                preview={preview}
-                comparison={comparison}
-                onCompare={(key) =>
-                  guarded(() => {
-                    if (comparison === key) {
-                      setToolOverlays((overlays) =>
-                        overlays.length ? [] : overlays,
-                      );
-                      setComparison("");
-                      return;
-                    }
-                    const mirror = transform(current, key);
-                    setToolOverlays([
-                      {
-                        ...mirror,
-                        color: chooseFunctionColor(functions),
-                        lineStyle: "dashed",
-                      },
-                    ]);
-                    setComparison(key);
-                  })
-                }
-                feedback={notice}
-                error={error}
-                onSelect={selectFunction}
-                onOpen={(mode) => {
-                  const pending =
-                    !!preview ||
-                    toolOverlays.length > 0 ||
-                    (["parity", "roots", "intersections"].includes(toolMode) &&
-                      !!notice);
-                  if (!panel && !pending)
-                    operationBefore.current = { points, refs };
-                  if (mode !== toolMode) restoreOperation();
-                  setToolMode(mode);
-                  setPanel(true);
-                  if (mode !== toolMode || !preview) setPreview(null);
-                  setError("");
-                  if (mode !== toolMode) setNotice("");
-                  setKeyboard(false);
-                }}
-                onClose={() => {
-                  setPanel(false);
-                  setError("");
-                }}
-                onCancel={restoreOperation}
-                onPreview={previewResult}
-                onSave={() =>
-                  guarded(() => {
-                    if (preview) {
-                      const target = current.id;
-                      const name = preview.alias;
-                      add({ ...preview, lineStyle: "solid" });
-                      setSelected(target);
-                      setNotice(`已添加 ${name}，继续调节或选择其他工具。`);
-                      operationBefore.current = { points, refs };
-                    }
-                  })
-                }
-                onAction={action}
-                onUpdate={(fn) =>
-                  guarded(() =>
-                    commit(functions.map((f) => (f.id === fn.id ? fn : f))),
-                  )
-                }
-                onError={setError}
-                x0={x0}
-                onX0={setX0}
-                second={second}
-                onSecond={setSecond}
-                points={points}
-                onPoints={setPoints}
-                onRefs={setRefs}
-              />
-            )}
             <div className="view-tools">
               <button
                 aria-label="放大"
@@ -1275,6 +1368,88 @@ export default function App() {
               </button>
             </div>
           </div>
+          {current && (
+            <FunctionActions
+              hidden={keyboard}
+              current={current}
+              functions={functions}
+              mode={toolMode}
+              open={panel}
+              preview={preview}
+              comparison={comparison}
+              onCompare={(key) =>
+                guarded(() => {
+                  if (comparison === key) {
+                    setToolOverlays((overlays) =>
+                      overlays.length ? [] : overlays,
+                    );
+                    setComparison("");
+                    return;
+                  }
+                  const mirror = transform(current, key);
+                  setToolOverlays([
+                    {
+                      ...mirror,
+                      color: chooseFunctionColor(functions),
+                      lineStyle: "dashed",
+                    },
+                  ]);
+                  setComparison(key);
+                })
+              }
+              feedback={notice}
+              error={error}
+              onSelect={selectFunction}
+              onOpen={(mode) => {
+                const pending =
+                  !!preview ||
+                  toolOverlays.length > 0 ||
+                  (["parity", "roots", "intersections"].includes(toolMode) &&
+                    !!notice);
+                if (!panel && !pending)
+                  operationBefore.current = { points, refs };
+                if (mode !== toolMode) restoreOperation();
+                setToolMode(mode);
+                setPanel(true);
+                if (mode !== toolMode || !preview) setPreview(null);
+                setError("");
+                if (mode !== toolMode) setNotice("");
+                setKeyboard(false);
+              }}
+              onClose={() => {
+                setPanel(false);
+                setError("");
+              }}
+              onCancel={restoreOperation}
+              onPreview={previewResult}
+              onSave={() =>
+                guarded(() => {
+                  if (preview) {
+                    const target = current.id;
+                    const name = preview.alias;
+                    add({ ...preview, lineStyle: "solid" });
+                    setSelected(target);
+                    setNotice(`已添加 ${name}，继续调节或选择其他工具。`);
+                    operationBefore.current = { points, refs };
+                  }
+                })
+              }
+              onAction={action}
+              onUpdate={(fn) =>
+                guarded(() =>
+                  commit(functions.map((f) => (f.id === fn.id ? fn : f))),
+                )
+              }
+              onError={setError}
+              x0={x0}
+              onX0={setX0}
+              second={second}
+              onSecond={setSecond}
+              points={points}
+              onPoints={setPoints}
+              onRefs={setRefs}
+            />
+          )}
           <div className="graph-settings">
             <label>
               <input
@@ -1324,6 +1499,14 @@ export default function App() {
                   ) ×
                 </button>
               ))}
+            </div>
+          )}
+          {notice && !panel && !expression && (
+            <div className="graph-notice" role="status">
+              <span>{notice}</span>
+              <button aria-label="关闭操作提示" onClick={() => setNotice("")}>
+                <X size={14} />
+              </button>
             </div>
           )}
           {error && !panel && !expression && (
@@ -1407,59 +1590,7 @@ export default function App() {
         <span>{functions.filter((f) => f.visible).length} 条可见曲线</span>
       </footer>
       {palette && (
-        <div className="modal-backdrop" onClick={() => setPalette(false)}>
-          <div
-            className="command-palette"
-            role="dialog"
-            aria-label="搜索数学工具"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <input
-              autoFocus
-              placeholder="搜索 Y轴、反函数、切线、定义域…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  const found = commands.find(([, label]) =>
-                    label
-                      .toLowerCase()
-                      .replaceAll(" ", "")
-                      .includes(query.toLowerCase().replaceAll(" ", "")),
-                  );
-                  if (found) {
-                    setPalette(false);
-                    setQuery("");
-                    action(found[0]);
-                  }
-                }
-              }}
-            />
-            <div>
-              {commands
-                .filter(([, label]) =>
-                  label
-                    .toLowerCase()
-                    .replaceAll(" ", "")
-                    .includes(query.toLowerCase().replaceAll(" ", "")),
-                )
-                .map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setPalette(false);
-                      setQuery("");
-                      action(key);
-                    }}
-                  >
-                    {label}
-                    <span>↵</span>
-                  </button>
-                ))}
-            </div>
-            <small>Esc 关闭</small>
-          </div>
-        </div>
+        <CommandPalette onAction={action} onClose={() => setPalette(false)} />
       )}
     </div>
   );

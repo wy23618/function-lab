@@ -45,7 +45,10 @@ export function derived(
   explanation: string,
   domain: Domain = fn.domain,
 ): FunctionDefinition {
-  const formattedExpression = formatExpression(expression);
+  const formattedExpression = formatExpression(
+    expression,
+    Object.keys(fn.bindings ?? {}),
+  );
   const operation: TransformOperation = {
     label,
     rule,

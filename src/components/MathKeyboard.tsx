@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { PointerEvent } from "react";
 import type { MathInputAction } from "../utils/mathInput";
-import { ChevronDown, Delete } from "lucide-react";
+import { Delete } from "lucide-react";
 const groups = ["常用", "字母", "函数", "符号"] as const;
 type Key = { label: string; action: MathInputAction };
 const textKey = (label: string, value = label): Key => ({
@@ -97,16 +97,8 @@ const symbols: Key[] = [
 ];
 export default function MathKeyboard({
   edit,
-  onAdd,
-  canAdd,
-  addLabel = "添加",
-  onClose,
 }: {
   edit: (action: MathInputAction, touchInput: boolean) => void;
-  onAdd: () => void;
-  canAdd: boolean;
-  addLabel?: string;
-  onClose: () => void;
 }) {
   const [group, setGroup] = useState<(typeof groups)[number]>("常用");
   const [upper, setUpper] = useState(false);
@@ -119,9 +111,11 @@ export default function MathKeyboard({
         : group === "符号"
           ? symbols
           : Array.from(
-              upper
-                ? "XTMNABQWERTYUIOPASDFGHJKLZXCVBNM"
-                : "xtmnabqwertyuiopasdfghjklzxcvbnm",
+              new Set(
+                upper
+                  ? "XTMNABQWERTYUIOPASDFGHJKLZXCVBNM"
+                  : "xtmnabqwertyuiopasdfghjklzxcvbnm",
+              ),
             ).map((letter) => textKey(letter));
   function press(action: MathInputAction) {
     edit(
@@ -137,18 +131,6 @@ export default function MathKeyboard({
       e.preventDefault();
       touchInput.current = e.pointerType === "touch" || e.pointerType === "pen";
       if (e.currentTarget.disabled) return;
-      e.currentTarget.animate(
-        [
-          {
-            transform: "scale(.92)",
-            backgroundColor: "#b8d9d2",
-            boxShadow: "inset 0 2px 5px #396e6430",
-          },
-          { transform: "scale(1)", backgroundColor: "", boxShadow: "" },
-        ],
-        { duration: 240, easing: "ease-out" },
-      );
-      if (touchInput.current && navigator.vibrate) navigator.vibrate(8);
     },
   };
   return (
@@ -167,17 +149,6 @@ export default function MathKeyboard({
               {g}
             </button>
           ))}
-        </div>
-        <div className="keyboard-corner-tools">
-          <button
-            type="button"
-            aria-label="收起数学键盘"
-            {...buttonEvents}
-            onClick={onClose}
-          >
-            <ChevronDown size={18} />
-            收起
-          </button>
         </div>
       </div>
       <div
@@ -226,13 +197,6 @@ export default function MathKeyboard({
         </button>
         <button
           type="button"
-          {...buttonEvents}
-          onClick={() => press({ type: "clear" })}
-        >
-          清空
-        </button>
-        <button
-          type="button"
           aria-label="跳出括号"
           {...buttonEvents}
           onClick={() => press({ type: "nextSlot" })}
@@ -248,15 +212,6 @@ export default function MathKeyboard({
         >
           <Delete size={19} />
           退格
-        </button>
-        <button
-          type="button"
-          className="keyboard-add"
-          disabled={!canAdd}
-          {...buttonEvents}
-          onClick={onAdd}
-        >
-          {addLabel}
         </button>
       </div>
     </div>

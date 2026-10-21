@@ -47,19 +47,37 @@ const symmetries = [
   ["diag", "y = x"],
   ["anti", "y = −x"],
 ];
+const toolGroups = [
+  {
+    label: "变换图像",
+    tools: [
+      ["scale", "伸缩"],
+      ["inverse", "反函数", true],
+      ["absolute", "绝对值"],
+      ["geometry", "直线对称"],
+    ],
+  },
+  {
+    label: "分析与求解",
+    tools: [
+      ["derivative", "求导", true],
+      ["roots", "零点"],
+      ["intersections", "交点"],
+      ["differential", "切线与法线"],
+      ["parity", "奇偶性"],
+    ],
+  },
+  {
+    label: "函数设置",
+    tools: [
+      ["domain", "定义域"],
+      ["parameters", "变量与参数"],
+      ["history", "变换记录"],
+    ],
+  },
+] as const;
 export default function FunctionActions(props: Props) {
   const { current, functions, mode, open, preview } = props;
-  const host = useRef<HTMLDivElement>(null);
-  const [compact, setCompact] = useState(false);
-  useEffect(() => {
-    const plot = host.current?.parentElement;
-    if (!plot) return;
-    const observer = new ResizeObserver(() =>
-      setCompact(plot.clientHeight < 320),
-    );
-    observer.observe(plot);
-    return () => observer.disconnect();
-  }, []);
   const [sessions, setSessions] = useState<
     Record<
       string,
@@ -68,8 +86,8 @@ export default function FunctionActions(props: Props) {
         b: number;
         vertical: number;
         horizontal: number;
-        partner: string;
-        swapped: boolean;
+        innerId: string;
+        outerId: string;
         domain: string;
         line: string;
         symmetry: string;
@@ -81,8 +99,8 @@ export default function FunctionActions(props: Props) {
     b: 0,
     vertical: 1,
     horizontal: 1,
-    partner: "",
-    swapped: false,
+    innerId: "",
+    outerId: "",
     domain: "",
     line: "y=x",
     symmetry: "",
@@ -93,8 +111,8 @@ export default function FunctionActions(props: Props) {
     b,
     vertical,
     horizontal,
-    partner,
-    swapped,
+    innerId,
+    outerId,
     domain,
     line,
     symmetry,
@@ -108,8 +126,6 @@ export default function FunctionActions(props: Props) {
     setB = (b: number) => update({ b });
   const setVertical = (vertical: number) => update({ vertical }),
     setHorizontal = (horizontal: number) => update({ horizontal });
-  const setPartner = (partner: string) => update({ partner }),
-    setSwapped = (swapped: boolean) => update({ swapped });
   const setDomain = (domain: string) => update({ domain }),
     setLine = (line: string) => update({ line });
   const skipSavedPreview = useRef<FunctionDefinition[] | null>(null);
@@ -117,7 +133,7 @@ export default function FunctionActions(props: Props) {
     source: FunctionDefinition;
     mode: string;
   } | null>(null);
-  const mainModes = ["translate", "symmetry", "compose", "more"];
+  const mainModes = ["translate", "symmetry", "compose", "analysis", "more"];
   const selectedMode = mainModes.includes(mode) ? mode : "more";
   const analysisOnly =
     [
@@ -128,14 +144,15 @@ export default function FunctionActions(props: Props) {
       "parameters",
       "history",
     ].includes(mode) ||
-    (mode === "more" && !preview);
+    (["more", "analysis"].includes(mode) && !preview);
   const candidates = functions.filter((fn) => fn.kind === "function");
-  const other =
-    candidates.find((fn) => fn.id === partner) ||
+  const outer = candidates.find((fn) => fn.id === outerId) || current;
+  const inner =
+    candidates.find((fn) => fn.id === innerId) ||
     candidates.find((fn) => fn.id !== current.id) ||
     current;
-  const outer = swapped ? other : current,
-    inner = swapped ? current : other;
+  const missingInner = !!innerId && !candidates.some((fn) => fn.id === innerId);
+  const missingOuter = !!outerId && !candidates.some((fn) => fn.id === outerId);
   const run = (task: () => void) => {
     try {
       task();
@@ -144,18 +161,14 @@ export default function FunctionActions(props: Props) {
       props.onError(e instanceof Error ? e.message : "请检查输入。");
     }
   };
-  const composition = (nextOther = other, nextSwap = swapped) =>
+  const composition = (nextInner = inner, nextOuter = outer) =>
     run(() =>
-      props.onPreview(
-        composeFunctions(
-          nextSwap ? nextOther : current,
-          nextSwap ? current : nextOther,
-          functions,
-        ),
-      ),
+      props.onPreview(composeFunctions(nextOuter, nextInner, functions)),
     );
   function choose(next: string) {
     if (open && mode === next) return;
+    if (next === "compose")
+      update({ innerId: innerId || inner.id, outerId: outerId || outer.id });
     props.onOpen(next);
   }
   useEffect(() => {
@@ -165,7 +178,13 @@ export default function FunctionActions(props: Props) {
       skipSavedPreview.current = null;
       if (saved !== functions) return;
     }
-    if (mode === "compose") composition();
+    if (mode === "compose") {
+      if (missingInner || missingOuter) {
+        props.onError("来源函数已删除，请重新选择内函数或外函数。");
+        return;
+      }
+      composition();
+    }
     if (
       (mode === "parity" || mode === "roots") &&
       (analyzedSource.current?.source !== current ||
@@ -220,14 +239,13 @@ export default function FunctionActions(props: Props) {
   }
   return (
     <div
-      ref={host}
-      className={`function-actions ${open ? "open" : ""} ${compact ? "compact" : ""}`}
+      className={`function-actions ${open ? "open" : ""}`}
       aria-label="当前函数操作"
       hidden={props.hidden}
     >
       <div className="function-action-bar">
         <label className="action-target" style={{ color: current.color }}>
-          <span>操作</span>
+          <span>{mode === "compose" ? "查看" : "操作"}</span>
           <select
             aria-label="正在操作的函数"
             value={current.id}
@@ -246,6 +264,7 @@ export default function FunctionActions(props: Props) {
           ["translate", "平移"],
           ["symmetry", "对称"],
           ["compose", "复合"],
+          ["analysis", "分析"],
           ["more", "更多"],
         ].map(([key, label]) => (
           <button
@@ -276,7 +295,9 @@ export default function FunctionActions(props: Props) {
       </div>
       {open && (
         <div className="function-action-body" key={mode}>
-          {!["translate", "symmetry", "compose", "more"].includes(mode) && (
+          {!["translate", "symmetry", "compose", "analysis", "more"].includes(
+            mode,
+          ) && (
             <button className="action-back" onClick={back}>
               ‹ 更多操作
             </button>
@@ -326,78 +347,146 @@ export default function FunctionActions(props: Props) {
           )}
           {mode === "compose" && (
             <div className="composition-controls">
-              <label>
-                另一个函数{" "}
-                <select
-                  aria-label="复合的另一个函数"
-                  value={other.id}
-                  onChange={(e) => {
-                    setPartner(e.target.value);
-                    const next = functions.find(
-                      (fn) => fn.id === e.target.value,
-                    )!;
-                    composition(next);
-                  }}
-                >
-                  {candidates.map((fn) => (
-                    <option key={fn.id} value={fn.id}>
-                      {fn.alias}({fn.variable || "x"}) = {fn.currentExpression}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="composition-selectors">
+                <label>
+                  先算 · 内函数
+                  <select
+                    aria-label="复合的内函数"
+                    value={missingInner ? "" : inner.id}
+                    onChange={(event) => {
+                      const fn = candidates.find(
+                        (item) => item.id === event.target.value,
+                      )!;
+                      update({ innerId: fn.id, outerId: outerId || outer.id });
+                      if (missingOuter) {
+                        props.onError("请选择外函数。");
+                        return;
+                      }
+                      composition(fn, outer);
+                    }}
+                  >
+                    {missingInner && (
+                      <option value="" disabled>
+                        来源已删除，请重新选择
+                      </option>
+                    )}
+                    {candidates.map((fn) => (
+                      <option key={fn.id} value={fn.id}>
+                        {fn.alias}({fn.variable || "x"}) ={" "}
+                        {fn.currentExpression}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  再算 · 外函数
+                  <select
+                    aria-label="复合的外函数"
+                    value={missingOuter ? "" : outer.id}
+                    onChange={(event) => {
+                      const fn = candidates.find(
+                        (item) => item.id === event.target.value,
+                      )!;
+                      update({ outerId: fn.id, innerId: innerId || inner.id });
+                      if (missingInner) {
+                        props.onError("请选择内函数。");
+                        return;
+                      }
+                      composition(inner, fn);
+                    }}
+                  >
+                    {missingOuter && (
+                      <option value="" disabled>
+                        来源已删除，请重新选择
+                      </option>
+                    )}
+                    {candidates.map((fn) => (
+                      <option key={fn.id} value={fn.id}>
+                        {fn.alias}({fn.variable || "x"}) ={" "}
+                        {fn.currentExpression}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
               <div className="composition-order">
-                <strong style={{ color: inner.color }}>
-                  先算 {inner.alias}
-                </strong>
-                <span>→</span>
-                <strong style={{ color: outer.color }}>
-                  再算 {outer.alias}
-                </strong>
+                {preview && (
+                  <div className="composition-formula">
+                    <span>
+                      {preview.alias}({preview.variable || "x"}) ={" "}
+                    </span>
+                    <MathFormula
+                      expression={preview.currentExpression}
+                      knownFunctionNames={Object.keys(preview.bindings ?? {})}
+                    />
+                    {expanded.length < 160 && (
+                      <span className="composition-expanded">
+                        = <MathFormula expression={expanded} />
+                      </span>
+                    )}
+                  </div>
+                )}
                 <button
+                  disabled={missingInner || missingOuter}
                   onClick={() => {
-                    setSwapped(!swapped);
-                    composition(other, !swapped);
+                    update({ innerId: outer.id, outerId: inner.id });
+                    composition(outer, inner);
                   }}
                 >
                   <ArrowLeftRight size={15} />
                   交换顺序
                 </button>
               </div>
-              {preview && (
-                <div className="composition-formula">
-                  <span>
-                    {preview.alias}({preview.variable || "x"}) ={" "}
-                  </span>
-                  <MathFormula expression={preview.currentExpression} />
-                  {expanded.length < 160 && (
-                    <span className="composition-expanded">
-                      = <MathFormula expression={expanded} />
-                    </span>
-                  )}
-                </div>
-              )}
-              <small>修改来源时自动更新，删除来源时保留当前结果。</small>
+              <details className="composition-rules">
+                <summary>复合规则与定义域</summary>
+                <p>
+                  {outer.alias}({inner.alias}({inner.variable || "x"})) 表示先算{" "}
+                  {inner.alias}，再把结果代入 {outer.alias}
+                  ；交换顺序通常会得到不同函数，复合不等于相乘。
+                </p>
+                <p>
+                  只有输入属于内函数定义域，并且内函数结果属于外函数定义域时，结果才有定义。自变量沿用内函数的{" "}
+                  {inner.variable || "x"}。
+                </p>
+                <p>
+                  允许自复合。修改来源函数时结果会联动，删除来源时保留删除前的结果；不允许循环引用。
+                </p>
+              </details>
             </div>
           )}
-          {mode === "more" && (
-            <div className="action-options more-options">
-              <button onClick={() => choose("scale")}>伸缩</button>
-              <button onClick={() => props.onAction("inverse", true)}>
-                反函数
-              </button>
-              <button onClick={() => choose("absolute")}>绝对值</button>
+          {mode === "analysis" && (
+            <div className="action-options analysis-options">
+              <button onClick={() => choose("roots")}>零点</button>
+              <button onClick={() => choose("intersections")}>交点</button>
+              <button onClick={() => choose("parity")}>奇偶性</button>
+              <button onClick={() => choose("domain")}>定义域</button>
               <button onClick={() => props.onAction("derivative", true)}>
                 求导
               </button>
-              <button onClick={() => choose("roots")}>零点</button>
-              <button onClick={() => choose("intersections")}>交点</button>
               <button onClick={() => choose("differential")}>切线与法线</button>
-              <button onClick={() => choose("domain")}>定义域</button>
-              <button onClick={() => choose("parameters")}>变量与参数</button>
-              <button onClick={() => choose("geometry")}>直线对称</button>
-              <button onClick={() => choose("parity")}>奇偶性</button>
-              <button onClick={() => choose("history")}>变换记录</button>
+            </div>
+          )}
+          {mode === "more" && (
+            <div className="tool-groups more-options">
+              {toolGroups.map((group) => (
+                <div className="tool-group" key={group.label}>
+                  <strong>{group.label}</strong>
+                  <div className="action-options">
+                    {group.tools.map((tool) => (
+                      <button
+                        key={tool[0]}
+                        onClick={() =>
+                          tool.length > 2
+                            ? props.onAction(tool[0], true)
+                            : choose(tool[0])
+                        }
+                      >
+                        {tool[1]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
           {mode === "scale" && (

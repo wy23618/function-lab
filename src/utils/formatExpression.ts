@@ -3,7 +3,10 @@ import type { MathNode } from "mathjs";
 import { normalizeExpression } from "../services/expressionParser";
 
 /** Clean generated formulas while preserving operations that can create holes or poles. */
-export function formatExpression(expression: string): string {
+export function formatExpression(
+  expression: string,
+  knownFunctionNames: string[] = [],
+): string {
   try {
     const unwrap = (node: MathNode | undefined): MathNode | undefined => {
       let current = node as (MathNode & { content?: MathNode }) | undefined;
@@ -95,7 +98,9 @@ export function formatExpression(expression: string): string {
       }
       return node;
     };
-    return formatTree(parse(normalizeExpression(expression))).toString({
+    return formatTree(
+      parse(normalizeExpression(expression, knownFunctionNames)),
+    ).toString({
       parenthesis: "auto",
       implicit: "hide",
     });

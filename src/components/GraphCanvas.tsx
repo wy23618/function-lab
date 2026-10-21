@@ -9,6 +9,7 @@ import { pointLabel } from "../utils/pointLabels";
 import { beginPinch, movePinch } from "../utils/pinchViewport";
 import type { PinchAnchor } from "../utils/pinchViewport";
 import MathFormula from "./MathFormula";
+import { curveLabelText } from "../utils/curveLabelText";
 import { viewportAfterHeightResize } from "../utils/resizeViewport";
 import { piAxisUsage, piTickStep, formatPiTick } from "../utils/piTicks";
 import type { AxisLabelMode } from "../utils/piTicks";
@@ -18,6 +19,7 @@ import type { LabelBox } from "../utils/curveLabels";
 interface Props {
   functions: FunctionDefinition[];
   legendFunctions?: FunctionDefinition[];
+  showLegend?: boolean;
   selected?: string;
   onSelect?: (id: string) => void;
   overlayKey?: string;
@@ -161,6 +163,9 @@ export default function GraphCanvas(props: Props) {
   const settledSize = useRef(size);
   const [legendExpanded, setLegendExpanded] = useState(false);
   const [obstacles, setObstacles] = useState<LabelBox[]>([]);
+  const selectedFunction = (props.legendFunctions || functions).find(
+    (fn) => fn.id === props.selected,
+  );
   const visibleLegend = (props.legendFunctions || functions).filter(
     (fn) => fn.visible,
   );
@@ -271,7 +276,7 @@ export default function GraphCanvas(props: Props) {
     if (!host) return;
     const overlays = [
       ...(host.parentElement?.querySelectorAll<HTMLElement>(
-        ".graph-legend, .view-tools, .function-actions",
+        ".graph-legend, .graph-selection, .view-tools, .function-actions",
       ) || []),
     ];
     const measure = () => {
@@ -321,10 +326,7 @@ export default function GraphCanvas(props: Props) {
     );
     if (props.selected) labelIds.add(props.selected);
     const curves = sampled.map(({ fn, segments }) => {
-      const text =
-        fn.kind === "function"
-          ? `${fn.alias || "f"}(${fn.variable || "x"})`
-          : fn.alias || fn.name;
+      const text = curveLabelText(fn);
       const previous = labelAnchorCache.current.get(fn.id);
       return {
         id: fn.id,
@@ -439,7 +441,7 @@ export default function GraphCanvas(props: Props) {
     canvas.height = Math.round(size.height * ratio);
     ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
     ctx.clearRect(0, 0, size.width, size.height);
-    ctx.fillStyle = "#fafaf8";
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, size.width, size.height);
     const minX = viewport.cx - size.width / (2 * viewport.scale);
     const maxX = viewport.cx + size.width / (2 * viewport.scale);
@@ -459,7 +461,7 @@ export default function GraphCanvas(props: Props) {
       const sx = toScreen({ x, y: 0 }).x;
       if (grid) {
         ctx.beginPath();
-        ctx.strokeStyle = "#e9ece7";
+        ctx.strokeStyle = "#f0f0f0";
         ctx.lineWidth = 1;
         ctx.moveTo(sx, 0);
         ctx.lineTo(sx, size.height);
@@ -484,7 +486,7 @@ export default function GraphCanvas(props: Props) {
       const sy = toScreen({ x: 0, y }).y;
       if (grid) {
         ctx.beginPath();
-        ctx.strokeStyle = "#e9ece7";
+        ctx.strokeStyle = "#f0f0f0";
         ctx.lineWidth = 1;
         ctx.moveTo(0, sy);
         ctx.lineTo(size.width, sy);
@@ -538,7 +540,7 @@ export default function GraphCanvas(props: Props) {
     }
     if (axes) {
       ctx.font = "12px Georgia, serif";
-      ctx.strokeStyle = "#39434b";
+      ctx.strokeStyle = "#8a8f94";
       ctx.lineWidth = 1.3;
       ctx.beginPath();
       ctx.moveTo(0, origin.y);
@@ -588,8 +590,13 @@ export default function GraphCanvas(props: Props) {
       .forEach((fn) => {
         const curve = sampled[curveIndex++];
         if (!curve) return;
+        const isSaved = (props.legendFunctions || functions).some(
+          (item) => item.id === fn.id,
+        );
+        ctx.globalAlpha =
+          props.selected && isSaved && fn.id !== props.selected ? 0.58 : 1;
         ctx.strokeStyle = fn.color;
-        ctx.lineWidth = fn.id === props.selected ? 3.2 : 2.3;
+        ctx.lineWidth = fn.id === props.selected ? 3.6 : 2.2;
         ctx.lineJoin = "round";
         ctx.setLineDash(fn.lineStyle === "dashed" ? [8, 5] : []);
         curve.segments.forEach((segment) => {
@@ -643,6 +650,7 @@ export default function GraphCanvas(props: Props) {
           ctx.stroke();
         });
       });
+    ctx.globalAlpha = 1;
     ctx.setLineDash([]);
     points.forEach((point, index) => {
       const screen = toScreen(point);
@@ -791,6 +799,7 @@ export default function GraphCanvas(props: Props) {
         data-y-axis-labels={symbolicAxes.y ? "pi" : "numeric"}
         aria-label="函数坐标图，双指缩放，单指拖动，鼠标点击或触屏长按标记坐标"
         role="img"
+        data-selected-function={props.selected}
         style={{
           width: "100%",
           height: "100%",
@@ -902,7 +911,41 @@ export default function GraphCanvas(props: Props) {
           onHover?.(null);
         }}
       />
-      <div className="graph-legend" aria-label="图像函数目录">
+      {selectedFunction && !props.showLegend && (
+        <div
+          className="graph-selection"
+          role="status"
+          style={
+            {
+              "--function-color": selectedFunction.color,
+            } as React.CSSProperties
+          }
+        >
+          <span className="graph-selection-caption">
+            当前函数{!selectedFunction.visible ? " · 已隐藏" : ""}
+          </span>
+          <span
+            className="graph-selection-formula"
+            style={{ color: selectedFunction.color }}
+          >
+            <i>
+              {selectedFunction.alias}
+              {selectedFunction.kind === "function"
+                ? `(${selectedFunction.variable || "x"}) = `
+                : " : "}
+            </i>
+            <MathFormula
+              expression={selectedFunction.currentExpression}
+              knownFunctionNames={Object.keys(selectedFunction.bindings ?? {})}
+            />
+          </span>
+        </div>
+      )}
+      <div
+        className="graph-legend"
+        aria-label="图像函数目录"
+        hidden={!props.showLegend}
+      >
         {(legendExpanded ? visibleLegend : visibleLegend.slice(0, 3)).map(
           (fn) => (
             <button
@@ -918,7 +961,10 @@ export default function GraphCanvas(props: Props) {
                   ? `${fn.alias || "f"}(${fn.variable || "x"}) = `
                   : `${fn.alias} : `}
               </span>
-              <MathFormula expression={fn.currentExpression} />
+              <MathFormula
+                expression={fn.currentExpression}
+                knownFunctionNames={Object.keys(fn.bindings ?? {})}
+              />
             </button>
           ),
         )}
@@ -941,10 +987,10 @@ export default function GraphCanvas(props: Props) {
             style={{ left: x, top: y, width, height, color: fn.color }}
             onClick={() => props.onSelect?.(fn.id)}
             aria-label={`选择曲线 ${fn.alias || fn.name}`}
+            aria-pressed={fn.id === props.selected}
+            title={`${fn.alias || fn.name}: ${fn.currentExpression}`}
           >
-            {fn.kind === "function"
-              ? `${fn.alias || "f"}(${fn.variable || "x"})`
-              : fn.alias || fn.name}
+            {curveLabelText(fn)}
           </button>
         ))}
       </div>

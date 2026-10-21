@@ -22,7 +22,7 @@ const url = process.env.LAB_URL || "http://127.0.0.1:5173/";
   assert.ok((await page.locator(".curve-label").count()) >= 2);
   assert.ok(
     (await page.locator(".curve-label").first().innerText()).match(
-      /^[a-z]\(x\)$/,
+      /^[a-z]\(x\)\s*=/,
     ),
   );
   const style = await page
@@ -45,23 +45,32 @@ const url = process.env.LAB_URL || "http://127.0.0.1:5173/";
   const f = data[0];
   await page.getByLabel("正在操作的函数").selectOption(f.id);
   await page.getByRole("button", { name: "复合", exact: true }).click();
-  assert.match(await page.locator(".composition-order").innerText(), /先算 g/);
-  assert.match(await page.locator(".composition-order").innerText(), /再算 f/);
+  assert.match(
+    await page.getByLabel("复合的内函数").locator("option:checked").innerText(),
+    /^g\(x\)/,
+  );
+  assert.match(
+    await page.getByLabel("复合的外函数").locator("option:checked").innerText(),
+    /^f\(x\)/,
+  );
   await page.getByRole("button", { name: "交换顺序" }).click();
-  assert.match(await page.locator(".composition-order").innerText(), /先算 f/);
+  assert.match(
+    await page.getByLabel("复合的内函数").locator("option:checked").innerText(),
+    /^f\(x\)/,
+  );
   await page.getByRole("button", { name: "交换顺序" }).click();
   await page.screenshot({ path: ".runtime/redesign-composition.png" });
   await page.getByRole("button", { name: "添加为新函数", exact: true }).click();
   assert.equal(await items().count(), 5);
   const composed = (await store()).at(-1);
   assert.match(composed.currentExpression, /f\(g\(x\)\)/);
-  await items().first().locator(".function-formula").click();
+  await items().first().locator(".function-edit").click();
   await page.getByLabel("输入表达式", { exact: true }).fill("x^3");
   await page.getByLabel("输入表达式", { exact: true }).press("Enter");
   await page.waitForTimeout(350);
   assert.equal((await store()).at(-1).bindings.f.currentExpression, "x^3");
   const compositeAlias = (await store()).at(-1).alias;
-  await items().first().locator(".function-formula").click();
+  await items().first().locator(".function-edit").click();
   await page
     .getByLabel("输入表达式", { exact: true })
     .fill(`${compositeAlias}(x)`);
@@ -81,7 +90,8 @@ const url = process.env.LAB_URL || "http://127.0.0.1:5173/";
     0,
     "editing an existing named function is valid",
   );
-  await items().first().locator(".function-delete").click();
+  await items().first().locator(".function-more").click();
+  await items().first().locator(".function-menu .function-delete").click();
   assert.equal(await items().count(), 4);
   const frozen = (await store()).at(-1);
   assert.ok(!frozen.liveBindings.f);
@@ -122,11 +132,17 @@ const url = process.env.LAB_URL || "http://127.0.0.1:5173/";
     await p.getByRole("button", { name: "复合", exact: true }).click();
     await p.locator(".action-save").waitFor({ state: "visible" });
     const saveBounds = await p.locator(".action-save").boundingBox();
-    const graphBounds = await p.locator(".graph-stage").boundingBox();
+    const graphBounds = await p.locator(".graph-panel").boundingBox();
+    const plotBounds = await p.locator(".graph-stage").boundingBox();
+    const toolBounds = await p.locator(".function-actions").boundingBox();
+    assert.ok(
+      toolBounds.y >= plotBounds.y + plotBounds.height - 1,
+      name + " tools do not cover curves",
+    );
     assert.ok(
       saveBounds.y >= graphBounds.y &&
         saveBounds.y + saveBounds.height <= graphBounds.y + graphBounds.height,
-      name + " save controls stay on the graph",
+      name + " save controls stay inside the workbench",
     );
     await p.screenshot({ path: ".runtime/redesign-" + name + ".png" });
     await p.getByRole("button", { name: "收起函数操作" }).click();
@@ -140,7 +156,7 @@ const url = process.env.LAB_URL || "http://127.0.0.1:5173/";
       await p
         .getByRole("button", { name: "收起数学键盘", exact: true })
         .innerText(),
-      "收起",
+      "收起键盘",
     );
     await p.getByRole("button", { name: "7", exact: true }).click();
     await p

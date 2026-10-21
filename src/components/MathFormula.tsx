@@ -104,13 +104,19 @@ function render(node: MathNode, depth = 0): ReactNode {
   }
   return node.toString();
 }
-export default function MathFormula({ expression }: { expression: string }) {
+export default function MathFormula({
+  expression,
+  knownFunctionNames = [],
+}: {
+  expression: string;
+  knownFunctionNames?: string[];
+}) {
   let result: ReactNode = expression;
   try {
-    let text = normalizeExpression(expression.slice(0, 1000)).replace(
-      /\(\)/g,
-      "(_)",
-    );
+    let text = normalizeExpression(
+      expression.slice(0, 1000),
+      knownFunctionNames,
+    ).replace(/\(\)/g, "(_)");
     text = text.replace(/([+*/^−-])$/, "$1_");
     if (text.endsWith("(")) text += "_";
     const balance = [...text].reduce(

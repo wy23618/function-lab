@@ -231,5 +231,13 @@ export function canonicalExpression(
     }
     return node.map((child) => expand(child));
   };
-  return expand(parse(normalizeExpression(fn.currentExpression))).toString();
+  return expand(
+    parse(
+      normalizeExpression(
+        fn.currentExpression,
+        Object.keys(fn.bindings ?? {}),
+        fn.variable,
+      ),
+    ),
+  ).toString();
 }

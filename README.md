@@ -11,13 +11,13 @@
 - 限制定义域，探索零点、交点、导数、切线、法线和可证明的反函数分支。
 - 关于任意直线反射函数和观察点，区分几何镜像与单值反函数。
 - 拖动画布、滚轮/双指缩放、撤销重做、变换历史、全屏及移动端数学键盘。
-- 浏览器自动保存，实验 JSON 导入/导出；核心功能不依赖服务器计算。
+- 浏览器自动保存函数、视野、观察点与画布设置，实验 JSON 导入/导出；核心功能不依赖服务器计算。
 
 ## 在线体验与截图
 
 在线体验：[`https://func.hellovian.com`](https://func.hellovian.com)（Cloudflare Workers，HTTPS）。备用入口：[`https://function-lab.hellovian.workers.dev`](https://function-lab.hellovian.workers.dev)。
 
-[桌面截图](docs/images/desktop.png) · [手机截图](docs/images/mobile.png) · [详细使用说明](docs/USAGE.md)
+[桌面截图](docs/images/desktop.png) · [手机截图](docs/images/mobile.png) · [详细使用说明](docs/USAGE.md) · [体验重构记录](docs/EXPERIENCE_REFACTOR.md)
 
 ## 快速开始
 
@@ -28,7 +28,7 @@ npm ci
 npm run dev
 ```
 
-打开终端显示的地址，输入 `x^2`、`sin(x)` 或 `1/(x-2)`。按 Enter 保留函数，再从该函数菜单打开变换与分析。`ln(x)`、`log(x)` 均为自然对数，角度使用弧度。
+打开终端显示的地址，输入 `x^2`、`sin(x)` 或 `1/(x-2)`。按 Enter 保留函数，再从函数行或画布下方工具栏打开变换与分析。`ln(x)`、`log(x)` 均为自然对数，角度使用弧度。
 
 Windows 用户也可先运行 `npm run build`，再双击 `启动函数实验室.cmd` 使用本地构建版本。
 
