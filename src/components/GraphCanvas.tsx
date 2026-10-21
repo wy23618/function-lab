@@ -10,7 +10,6 @@ import { beginPinch, movePinch } from "../utils/pinchViewport";
 import type { PinchAnchor } from "../utils/pinchViewport";
 import MathFormula from "./MathFormula";
 import { curveLabelText } from "../utils/curveLabelText";
-import { viewportAfterHeightResize } from "../utils/resizeViewport";
 import { piAxisUsage, piTickStep, formatPiTick } from "../utils/piTicks";
 import type { AxisLabelMode } from "../utils/piTicks";
 import { placeCurveLabels, segmentDistance } from "../utils/curveLabels";
@@ -51,7 +50,10 @@ function canvasPosition(
   clientY: number,
 ): GraphPoint {
   const rect = canvas.getBoundingClientRect();
-  if (canvas.closest(".manual-landscape"))
+  if (
+    canvas.closest(".manual-landscape") &&
+    !canvas.closest(".graph-panel:fullscreen")
+  )
     return {
       x: ((clientY - rect.top) * canvas.clientWidth) / rect.height,
       y: ((rect.right - clientX) * canvas.clientHeight) / rect.width,
@@ -155,7 +157,6 @@ export default function GraphCanvas(props: Props) {
   const latest = useRef(props);
   latest.current = props;
   const [size, setSize] = useState({ width: 800, height: 600 });
-  const measuredSize = useRef<{ width: number; height: number } | null>(null);
   const [hover, setHover] = useState<GraphPoint | null>(null);
   const [dragging, setDragging] = useState(false);
   const [settling, setSettling] = useState(false);
@@ -187,18 +188,9 @@ export default function GraphCanvas(props: Props) {
     const observer = new ResizeObserver((entries) => {
       const { width, height } = entries[0].contentRect;
       if (width > 0 && height > 0) {
-        const next = { width, height };
-        if (measuredSize.current) {
-          const view = latest.current.viewport;
-          const resized = viewportAfterHeightResize(
-            view,
-            measuredSize.current,
-            next,
-          );
-          if (resized !== view) latest.current.onViewportChange(resized);
-        }
-        measuredSize.current = next;
-        setSize(next);
+        // Layout changes resize the drawing surface, never the world camera.
+        // This keeps fullscreen, keyboard and toolbar transitions reversible.
+        setSize({ width, height });
       }
     });
     observer.observe(hostRef.current);

@@ -7,7 +7,8 @@ import {
   Plus,
   Minus,
   Home,
-  Maximize,
+  Maximize2,
+  Minimize2,
   X,
   Scan,
   Smartphone,
@@ -30,7 +31,7 @@ import {
   reflect,
   derived,
 } from "./services/transformEngine";
-import { sampleFunction, evaluateFunction } from "./services/functionSampler";
+import { evaluateFunction } from "./services/functionSampler";
 import {
   roots,
   intersections,
@@ -49,6 +50,7 @@ import { chooseFunctionColor } from "./utils/functionColors";
 import { formatDomain } from "./utils/formatMath";
 import { pointLabel, nextPointLabel } from "./utils/pointLabels";
 import GraphCanvas from "./components/GraphCanvas";
+import { fitGraphViewport } from "./utils/fitViewport";
 import MathKeyboard from "./components/MathKeyboard";
 import FunctionList from "./components/FunctionList";
 import CommandPalette from "./components/CommandPalette";
@@ -109,6 +111,14 @@ export default function App() {
   const [toolMode, setToolMode] = useState("more");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const graphPanelRef = useRef<HTMLElement>(null);
+  const [graphFullscreen, setGraphFullscreen] = useState(false);
+  useEffect(() => {
+    const update = () =>
+      setGraphFullscreen(document.fullscreenElement === graphPanelRef.current);
+    document.addEventListener("fullscreenchange", update);
+    return () => document.removeEventListener("fullscreenchange", update);
+  }, []);
   const [orientationHint, setOrientationHint] = useState("");
   const [manualLandscape, setManualLandscape] = useState(false);
   useEffect(() => {
@@ -512,37 +522,29 @@ export default function App() {
     });
   }
   function fit() {
-    const ps = functions
-      .filter((f) => f.visible)
-      .flatMap((f) => sampleFunction(f, -10, 10, 800).flat())
-      .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y));
-    if (!ps.length) {
-      setNotice("当前可见范围没有有效曲线。");
+    const plot = document.querySelector<HTMLElement>(".graph-canvas-wrap");
+    const fitted = fitGraphViewport(functions, {
+      width: plot?.clientWidth || 800,
+      height: plot?.clientHeight || 600,
+    });
+    if (!fitted) {
+      setNotice("没有可用于调整视图的有效曲线。");
       return;
     }
-    const xs = ps.map((p) => p.x).sort((a, b) => a - b),
-      ys = ps.map((p) => p.y).sort((a, b) => a - b);
-    const lo = 0,
-      hi = ps.length - 1;
-    const xmin = xs[lo],
-      xmax = xs[hi],
-      ymin = ys[lo],
-      ymax = ys[hi];
-    const plot = document.querySelector<HTMLElement>(".graph-canvas-wrap");
-    setViewport({
-      cx: (xmin + xmax) / 2,
-      cy: (ymin + ymax) / 2,
-      scale: Math.max(
-        1e-12,
-        Math.min(
-          (plot?.clientWidth || 800) / Math.max(2, xmax - xmin) / 1.15,
-          (plot?.clientHeight || 600) / Math.max(2, ymax - ymin) / 1.15,
-        ),
-      ),
-    });
-    setNotice(
-      "已适应 x ∈ [−10,10] 内的全部可见采样曲线；无界函数的完整图像无法装入有限画布。",
-    );
+    setViewport(fitted);
+    setNotice("");
+  }
+  async function toggleGraphFullscreen() {
+    setKeyboard(false);
+    inputRef.current?.blur();
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else if (typeof graphPanelRef.current?.requestFullscreen === "function")
+        await graphPanelRef.current.requestFullscreen();
+      else throw new Error("unsupported");
+    } catch {
+      setNotice("此浏览器暂不支持全屏，可横过手机扩大画布。");
+    }
   }
   function action(key: string, asPreview = false) {
     const retain = (fn: FunctionDefinition) =>
@@ -1285,6 +1287,7 @@ export default function App() {
           </div>
         </aside>
         <section
+          ref={graphPanelRef}
           className={`graph-panel ${panel && !keyboard ? "tools-open" : ""}`}
           aria-label="函数绘图工作台"
         >
@@ -1346,25 +1349,23 @@ export default function App() {
                 <Home size={20} />
               </button>
               <button
-                aria-label="适应所有曲线"
-                title="适应所有曲线"
+                aria-label="适应视图"
+                title="适应视图：调整到曲线的主要区域"
                 onClick={fit}
               >
                 <Scan size={20} />
               </button>
               <button
-                aria-label="全屏"
-                title="全屏"
-                onClick={() => {
-                  if (!document.fullscreenElement)
-                    document
-                      .querySelector(".graph-panel")
-                      ?.requestFullscreen()
-                      .catch(() => setError("此浏览器暂不支持全屏。"));
-                  else document.exitFullscreen();
-                }}
+                aria-label={graphFullscreen ? "退出全屏" : "全屏"}
+                title={graphFullscreen ? "退出全屏" : "全屏看图"}
+                aria-pressed={graphFullscreen}
+                onClick={toggleGraphFullscreen}
               >
-                <Maximize size={19} />
+                {graphFullscreen ? (
+                  <Minimize2 size={19} />
+                ) : (
+                  <Maximize2 size={19} />
+                )}
               </button>
             </div>
           </div>
