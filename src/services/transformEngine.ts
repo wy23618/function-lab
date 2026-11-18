@@ -20,7 +20,7 @@ export function makeFunction(
   index = 0,
 ): FunctionDefinition {
   const prepared = prepareExpression(expression);
-  return {
+  const fn: FunctionDefinition = {
     variable: prepared.variable,
     parameters: prepared.parameters,
     alias: prepared.name ?? String.fromCharCode(102 + (index % 15)),
@@ -36,6 +36,17 @@ export function makeFunction(
     kind: "function",
     transformHistory: [],
   };
+  return prepared.inputAxis
+    ? {
+        ...fn,
+        inputAxis: "y",
+        kind: "relation",
+        name: "反向关系",
+        currentExpression: `x = ${prepared.expression}`,
+        source: { ...fn },
+        reflection: { a: 1, b: -1, c: 0 },
+      }
+    : fn;
 }
 export function derived(
   fn: FunctionDefinition,
@@ -63,6 +74,8 @@ export function derived(
     visible: true,
     locked: false,
     kind: "function",
+    inputAxis: undefined,
+    calculusLink: undefined,
     source: undefined,
     reflection: undefined,
     alias: undefined,

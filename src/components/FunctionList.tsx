@@ -118,7 +118,7 @@ export default function FunctionList({
             className="function-edit"
             aria-label={`编辑 ${fn.name}`}
             title="编辑公式"
-            disabled={fn.locked || fn.kind === "relation"}
+            disabled={fn.locked || (fn.kind === "relation" && !fn.inputAxis)}
             onClick={(event) => {
               event.stopPropagation();
               onEdit(fn);
@@ -149,13 +149,24 @@ export default function FunctionList({
           >
             <MoreVertical size={19} />
           </button>
+          {fn.calculusLink && (
+            <div className="function-link-note" title={fn.calculusLink.error}>
+              {fn.calculusLink.error
+                ? "来源不满足条件 · 暂不可用"
+                : fn.calculusLink.frozen
+                  ? "来源已删除 · 保留最后结果"
+                  : `${fn.calculusLink.kind === "derivative" ? `${fn.calculusLink.order} 阶导数` : `${fn.calculusLink.order} 阶泰勒`} · 跟随来源更新`}
+            </div>
+          )}
           {menu === fn.id && (
             <div
               className="function-menu"
               onClick={(event) => event.stopPropagation()}
             >
               <button
-                disabled={fn.locked || fn.kind === "relation"}
+                disabled={
+                  fn.locked || (fn.kind === "relation" && !fn.inputAxis)
+                }
                 onClick={() => run(() => onEdit(fn))}
               >
                 <Pencil size={16} />

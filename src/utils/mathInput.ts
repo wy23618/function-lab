@@ -1,6 +1,7 @@
 export type MathInputAction =
   | { type: "insert"; value: string }
   | { type: "wrap"; prefix: string; suffix: string }
+  | { type: "template"; value: string; select?: string }
   | {
       type:
         | "backspace"
@@ -24,6 +25,19 @@ export function editMathInput(
   let replacement = "",
     caret = start;
   switch (action.type) {
+    case "template": {
+      const selected = text.slice(start, end);
+      const value = action.value.replace("$", selected || "x");
+      const target =
+        !selected && action.value.includes("$") ? "x" : action.select;
+      const offset = target ? value.indexOf(target) : -1;
+      return {
+        text: text.slice(0, start) + value + text.slice(end),
+        start: offset >= 0 ? start + offset : start + value.length,
+        end:
+          offset >= 0 ? start + offset + target!.length : start + value.length,
+      };
+    }
     case "left": {
       const pos = start === end ? Math.max(0, start - 1) : start;
       return { text, start: pos, end: pos };
@@ -56,6 +70,14 @@ export function editMathInput(
       if (start === end) end = Math.min(text.length, end + 1);
       break;
     case "insert":
+      if (/^\^[23]$/.test(action.value)) {
+        replacement =
+          start < end
+            ? `(${text.slice(start, end)})${action.value}`
+            : `${start === 0 || /[+*/=(,?:−-]/.test(text[start - 1]) ? "x" : ""}${action.value}`;
+        caret = start + replacement.length;
+        break;
+      }
       if (action.value === ")" && start === end && text[start] === ")")
         return { text, start: start + 1, end: start + 1 };
       if (action.value === "(" || action.value === "^") {

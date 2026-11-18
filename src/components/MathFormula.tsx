@@ -113,8 +113,9 @@ export default function MathFormula({
 }) {
   let result: ReactNode = expression;
   try {
+    const reversed = expression.match(/^x\s*=(?!=)\s*(.+)$/);
     let text = normalizeExpression(
-      expression.slice(0, 1000),
+      (reversed ? reversed[1] : expression).slice(0, 1000),
       knownFunctionNames,
     ).replace(/\(\)/g, "(_)");
     text = text.replace(/([+*/^−-])$/, "$1_");
@@ -124,7 +125,18 @@ export default function MathFormula({
       0,
     );
     if (balance > 0 && balance < 30) text += ")".repeat(balance);
-    if (text) result = render(parse(text));
+    if (text)
+      result = (
+        <>
+          {reversed && (
+            <>
+              <i>x</i>
+              <span className="math-op"> = </span>
+            </>
+          )}
+          {render(parse(text))}
+        </>
+      );
   } catch {}
   return <span className="math-formula">{result}</span>;
 }

@@ -121,9 +121,26 @@ export function intersections(
 export function derivativeExpression(fn: FunctionDefinition): string {
   if (fn.kind !== "function") throw new Error("关系不能直接求显函数导数。");
   try {
-    const expression = derivative(
-      canonicalExpression(fn, 0, false, fn.variable ?? "x"),
-      fn.variable ?? "x",
+    const variable = fn.variable ?? "x";
+    const differentiate = (node: MathNode): MathNode => {
+      const n = node as MathNode & {
+        condition?: MathNode;
+        trueExpr?: MathNode;
+        falseExpr?: MathNode;
+      };
+      if (
+        n.type === "ConditionalNode" &&
+        n.condition &&
+        n.trueExpr &&
+        n.falseExpr
+      )
+        return parse(
+          `(${n.condition.toString()}) ? (${differentiate(n.trueExpr).toString()}) : (${differentiate(n.falseExpr).toString()})`,
+        );
+      return derivative(node, variable);
+    };
+    const expression = differentiate(
+      parse(canonicalExpression(fn, 0, false, variable)),
     ).toString();
     compileExpression(expression, {
       variable: fn.variable ?? "x",

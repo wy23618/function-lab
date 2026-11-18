@@ -61,6 +61,11 @@ import {
   withFunctionNames,
 } from "./services/functionContext";
 import FunctionActions from "./components/FunctionActions";
+import CalculusLab from "./components/CalculusLab";
+import WorkspaceTabs from "./components/WorkspaceTabs";
+import type { WorkspaceMode } from "./components/WorkspaceTabs";
+import ComposerAssist from "./components/ComposerAssist";
+import FunctionParameters from "./components/FunctionParameters";
 import { useUiHistory } from "./utils/useUiHistory";
 import type { AxisLabelMode } from "./utils/piTicks";
 import { editMathInput } from "./utils/mathInput";
@@ -92,6 +97,15 @@ const initial = () => {
   ];
 };
 export default function App() {
+  const [workspaceMode, setWorkspaceMode] = useState<WorkspaceMode>("graph");
+  const [studyInputActive, setStudyInputActive] = useState(false);
+  const changeWorkspace = (mode: WorkspaceMode) => {
+    setWorkspaceMode(mode);
+    setKeyboard(false);
+    inputRef.current?.blur();
+    restoreOperation();
+    setPanel(false);
+  };
   const [savedWorkspace] = useState(loadWorkspace);
   const [functions, setFunctions] = useState<FunctionDefinition[]>(initial);
   const [selected, setSelected] = useState(() => functions[0]?.id || "");
@@ -338,10 +352,12 @@ export default function App() {
     try {
       action();
       setError("");
+      return true;
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "操作暂时无法完成，请检查输入。",
       );
+      return false;
     }
   }
   function undo() {
@@ -508,6 +524,7 @@ export default function App() {
     setGraphRatio(Math.max(0.25, Math.min(0.85, ratio)));
   }
   function editInput(action: MathInputAction, touchInput: boolean) {
+    setStudyInputActive(true);
     const el = inputRef.current;
     const start = el?.selectionStart ?? expression.length;
     const end = el?.selectionEnd ?? start;
@@ -673,6 +690,7 @@ export default function App() {
             `d/d${current.variable || "x"}`,
             "由原函数求导，保留原函数定义域；不可导点不绘制。",
           );
+          d.lineStyle = "dashed";
           d.differentiabilityChecks = [
             ...(current.differentiabilityChecks || []),
             {
@@ -763,6 +781,7 @@ export default function App() {
   function selectFunction(id: string) {
     setKeyboard(false);
     inputRef.current?.blur();
+    setStudyInputActive(false);
     if (id === current?.id) return;
     setToolOverlays((overlays) => (overlays.length ? [] : overlays));
     setComparison("");
@@ -861,6 +880,11 @@ export default function App() {
         <div className="brand">
           <strong>函数实验室</strong>
         </div>
+        <WorkspaceTabs
+          mode={workspaceMode}
+          onChange={changeWorkspace}
+          compact
+        />
         <div className="header-actions">
           <button
             className="search-tools"
@@ -1075,9 +1099,10 @@ export default function App() {
                   inputMode={touchLayout ? "none" : undefined}
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder="例如 sin(x) 或 a*x^2"
+                  placeholder="sin(x)、x=2、x=ky+b"
                   value={expression}
                   onChange={(e) => {
+                    setStudyInputActive(true);
                     setExpression(e.target.value);
                     setInputError("");
                     setCaretPosition(e.target.selectionStart ?? 0);
@@ -1105,6 +1130,7 @@ export default function App() {
                     }
                   }}
                   onFocus={() => {
+                    setStudyInputActive(true);
                     if (
                       !keyboard &&
                       (panel || preview || toolOverlays.length)
@@ -1115,6 +1141,7 @@ export default function App() {
                     if (touchLayout) setKeyboard(true);
                   }}
                   onClick={() => {
+                    setStudyInputActive(true);
                     if (touchLayout) setKeyboard(true);
                   }}
                 />
@@ -1142,13 +1169,15 @@ export default function App() {
                     )}
                   />
                   <span className="editing-hint">
-                    {completeUserExpression(expression).completion && draft
-                      ? "已补齐右括号"
-                      : exponentEditing
-                        ? "指数 · 点跳出返回底数"
-                        : draft && draft.currentExpression !== expression
-                          ? "已识别"
-                          : "实时公式"}
+                    {draft && !studyInputActive && workspaceMode !== "graph"
+                      ? "草稿保留 · 点输入框预览"
+                      : completeUserExpression(expression).completion && draft
+                        ? "已补齐右括号"
+                        : exponentEditing
+                          ? "指数 · 点跳出返回底数"
+                          : draft && draft.currentExpression !== expression
+                            ? "已识别"
+                            : "实时公式"}
                   </span>
                 </div>
               )}
@@ -1158,6 +1187,20 @@ export default function App() {
                 </p>
               )}
             </form>
+            <ComposerAssist
+              edit={editInput}
+              onExpression={(text) => {
+                setStudyInputActive(true);
+                setExpression(text);
+                setInputError("");
+                setCaretPosition(text.length);
+                setKeyboard(false);
+                inputRef.current?.blur();
+                requestAnimationFrame(() =>
+                  inputRef.current?.setSelectionRange(text.length, text.length),
+                );
+              }}
+            />
             <div className="composer-controls">
               <button
                 className="keyboard-toggle"
@@ -1184,6 +1227,16 @@ export default function App() {
               </button>
             </div>
             {keyboard && <MathKeyboard edit={editInput} />}
+            {!expression && (
+              <FunctionParameters
+                fn={current}
+                onChange={(fn) =>
+                  guarded(() =>
+                    commit(functions.map((f) => (f.id === fn.id ? fn : f))),
+                  )
+                }
+              />
+            )}
           </div>
           <div className="function-list-heading">
             <span className="list-heading-title">
@@ -1256,6 +1309,7 @@ export default function App() {
                 });
               }}
               onTools={(fn) => {
+                setWorkspaceMode("graph");
                 if (!panel) operationBefore.current = { points, refs };
                 if (fn.id !== current?.id) setPreview(null);
                 setSelected(fn.id);
@@ -1288,302 +1342,352 @@ export default function App() {
         </aside>
         <section
           ref={graphPanelRef}
-          className={`graph-panel ${panel && !keyboard ? "tools-open" : ""}`}
+          className={`graph-panel ${workspaceMode !== "graph" ? "calculus-workspace" : panel && !keyboard ? "tools-open" : ""}`}
           aria-label="函数绘图工作台"
         >
-          <div className="graph-stage">
-            <GraphCanvas
-              functions={displayed}
-              legendFunctions={functions}
-              showLegend={showLegend}
-              selected={current?.id}
-              onSelect={selectFunction}
-              overlayKey={`${showLegend}|${panel}|${toolMode}|${keyboard}|${current?.id}|${error}|${notice}|${preview?.id}`}
+          <WorkspaceTabs mode={workspaceMode} onChange={changeWorkspace} />
+          {workspaceMode !== "graph" ? (
+            <CalculusLab
+              current={studyInputActive && draft ? draft : current}
+              mode={workspaceMode}
               viewport={viewport}
-              onViewportChange={setViewport}
-              grid={grid}
-              axes={axes}
-              ticks={ticks}
-              axisLabels={axisLabels}
-              points={points}
-              onPoint={(p) =>
+              onViewport={setViewport}
+              onFullscreen={toggleGraphFullscreen}
+              operationError={error}
+              onSave={(fn) =>
                 guarded(() => {
-                  if (points.length >= 5000)
-                    throw new Error("观察点已达 5000 个，请先清除部分标记。");
-                  setPoints((ps) => [
-                    ...ps,
-                    { ...p, label: nextPointLabel(ps) },
-                  ]);
-                })
-              }
-              referenceLines={refs}
-            />
-            <div className="view-tools">
-              <button
-                aria-label="放大"
-                onClick={() =>
-                  setViewport((v) => ({
-                    ...v,
-                    scale: Math.min(100000, v.scale * 1.3),
-                  }))
-                }
-              >
-                <Plus size={21} />
-              </button>
-              <button
-                aria-label="缩小"
-                onClick={() =>
-                  setViewport((v) => ({
-                    ...v,
-                    scale: Math.max(1e-12, v.scale / 1.3),
-                  }))
-                }
-              >
-                <Minus size={21} />
-              </button>
-              <button
-                aria-label="复位"
-                title="复位"
-                onClick={() => setViewport(defaultView)}
-              >
-                <Home size={20} />
-              </button>
-              <button
-                aria-label="适应视图"
-                title="适应视图：调整到曲线的主要区域"
-                onClick={fit}
-              >
-                <Scan size={20} />
-              </button>
-              <button
-                aria-label={graphFullscreen ? "退出全屏" : "全屏"}
-                title={graphFullscreen ? "退出全屏" : "全屏看图"}
-                aria-pressed={graphFullscreen}
-                onClick={toggleGraphFullscreen}
-              >
-                {graphFullscreen ? (
-                  <Minimize2 size={19} />
-                ) : (
-                  <Maximize2 size={19} />
-                )}
-              </button>
-            </div>
-          </div>
-          {current && (
-            <FunctionActions
-              hidden={keyboard}
-              current={current}
-              functions={functions}
-              mode={toolMode}
-              open={panel}
-              preview={preview}
-              comparison={comparison}
-              onCompare={(key) =>
-                guarded(() => {
-                  if (comparison === key) {
-                    setToolOverlays((overlays) =>
-                      overlays.length ? [] : overlays,
-                    );
-                    setComparison("");
-                    return;
-                  }
-                  const mirror = transform(current, key);
-                  setToolOverlays([
-                    {
-                      ...mirror,
-                      color: chooseFunctionColor(functions),
-                      lineStyle: "dashed",
-                    },
-                  ]);
-                  setComparison(key);
-                })
-              }
-              feedback={notice}
-              error={error}
-              onSelect={selectFunction}
-              onOpen={(mode) => {
-                const pending =
-                  !!preview ||
-                  toolOverlays.length > 0 ||
-                  (["parity", "roots", "intersections"].includes(toolMode) &&
-                    !!notice);
-                if (!panel && !pending)
-                  operationBefore.current = { points, refs };
-                if (mode !== toolMode) restoreOperation();
-                setToolMode(mode);
-                setPanel(true);
-                if (mode !== toolMode || !preview) setPreview(null);
-                setError("");
-                if (mode !== toolMode) setNotice("");
-                setKeyboard(false);
-              }}
-              onClose={() => {
-                setPanel(false);
-                setError("");
-              }}
-              onCancel={restoreOperation}
-              onPreview={previewResult}
-              onSave={() =>
-                guarded(() => {
-                  if (preview) {
-                    const target = current.id;
-                    const name = preview.alias;
-                    add({ ...preview, lineStyle: "solid" });
-                    setSelected(target);
-                    setNotice(`已添加 ${name}，继续调节或选择其他工具。`);
-                    operationBefore.current = { points, refs };
+                  if (fn.calculusLink?.sourceId === "draft") {
+                    const origin = prepareInputDraft();
+                    const next = editingFunctionId
+                      ? functions.map((f) =>
+                          f.id === editingFunctionId ? origin : f,
+                        )
+                      : [...functions, origin];
+                    commit([
+                      ...next,
+                      {
+                        ...fn,
+                        calculusLink: {
+                          ...fn.calculusLink,
+                          sourceId: origin.id,
+                        },
+                      },
+                    ]);
+                    setSelected(origin.id);
+                    setExpression("");
+                    setEditingFunctionId("");
+                  } else {
+                    add(fn);
+                    setSelected(current?.id || "");
                   }
                 })
               }
-              onAction={action}
-              onUpdate={(fn) =>
-                guarded(() =>
-                  commit(functions.map((f) => (f.id === fn.id ? fn : f))),
-                )
-              }
-              onError={setError}
-              x0={x0}
-              onX0={setX0}
-              second={second}
-              onSecond={setSecond}
-              points={points}
-              onPoints={setPoints}
-              onRefs={setRefs}
             />
-          )}
-          <div className="graph-settings">
-            <label>
-              <input
-                type="checkbox"
-                checked={grid}
-                onChange={(e) => setGrid(e.target.checked)}
-              />
-              网格
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={axes}
-                onChange={(e) => setAxes(e.target.checked)}
-              />
-              坐标轴
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={ticks}
-                onChange={(e) => setTicks(e.target.checked)}
-              />
-              刻度
-            </label>
-            <span>滚轮缩放 · 拖动画布 · 点击固定点</span>
-            <button
-              onClick={() => {
-                setPoints([]);
-                setRefs([]);
-              }}
-            >
-              清除标记
-            </button>
-          </div>
-          {points.length > 0 && (
-            <div className="point-strip">
-              {points.map((p, i) => (
+          ) : (
+            <>
+              <div className="graph-stage">
+                <GraphCanvas
+                  functions={displayed}
+                  legendFunctions={functions}
+                  showLegend={showLegend}
+                  selected={current?.id}
+                  onSelect={selectFunction}
+                  overlayKey={`${showLegend}|${panel}|${toolMode}|${keyboard}|${current?.id}|${error}|${notice}|${preview?.id}`}
+                  viewport={viewport}
+                  onViewportChange={setViewport}
+                  grid={grid}
+                  axes={axes}
+                  ticks={ticks}
+                  axisLabels={axisLabels}
+                  points={points}
+                  onPoint={(p) =>
+                    guarded(() => {
+                      if (points.length >= 5000)
+                        throw new Error(
+                          "观察点已达 5000 个，请先清除部分标记。",
+                        );
+                      setPoints((ps) => [
+                        ...ps,
+                        { ...p, label: nextPointLabel(ps) },
+                      ]);
+                    })
+                  }
+                  referenceLines={refs}
+                />
+                <div className="view-tools">
+                  <button
+                    aria-label="放大"
+                    onClick={() =>
+                      setViewport((v) => ({
+                        ...v,
+                        scale: Math.min(100000, v.scale * 1.3),
+                      }))
+                    }
+                  >
+                    <Plus size={21} />
+                  </button>
+                  <button
+                    aria-label="缩小"
+                    onClick={() =>
+                      setViewport((v) => ({
+                        ...v,
+                        scale: Math.max(1e-12, v.scale / 1.3),
+                      }))
+                    }
+                  >
+                    <Minus size={21} />
+                  </button>
+                  <button
+                    aria-label="复位"
+                    title="复位"
+                    onClick={() => setViewport(defaultView)}
+                  >
+                    <Home size={20} />
+                  </button>
+                  <button
+                    aria-label="适应视图"
+                    title="适应视图：调整到曲线的主要区域"
+                    onClick={fit}
+                  >
+                    <Scan size={20} />
+                  </button>
+                  <button
+                    aria-label={graphFullscreen ? "退出全屏" : "全屏"}
+                    title={graphFullscreen ? "退出全屏" : "全屏看图"}
+                    aria-pressed={graphFullscreen}
+                    onClick={toggleGraphFullscreen}
+                  >
+                    {graphFullscreen ? (
+                      <Minimize2 size={19} />
+                    ) : (
+                      <Maximize2 size={19} />
+                    )}
+                  </button>
+                </div>
+              </div>
+              {current && (
+                <FunctionActions
+                  hidden={keyboard}
+                  current={current}
+                  functions={functions}
+                  mode={toolMode}
+                  open={panel}
+                  preview={preview}
+                  comparison={comparison}
+                  onCompare={(key) =>
+                    guarded(() => {
+                      if (comparison === key) {
+                        setToolOverlays((overlays) =>
+                          overlays.length ? [] : overlays,
+                        );
+                        setComparison("");
+                        return;
+                      }
+                      const mirror = transform(current, key);
+                      setToolOverlays([
+                        {
+                          ...mirror,
+                          color: chooseFunctionColor(functions),
+                          lineStyle: "dashed",
+                        },
+                      ]);
+                      setComparison(key);
+                    })
+                  }
+                  feedback={notice}
+                  error={error}
+                  onSelect={selectFunction}
+                  onOpen={(mode) => {
+                    const pending =
+                      !!preview ||
+                      toolOverlays.length > 0 ||
+                      (["parity", "roots", "intersections"].includes(
+                        toolMode,
+                      ) &&
+                        !!notice);
+                    if (!panel && !pending)
+                      operationBefore.current = { points, refs };
+                    if (mode !== toolMode) restoreOperation();
+                    setToolMode(mode);
+                    setPanel(true);
+                    if (mode !== toolMode || !preview) setPreview(null);
+                    setError("");
+                    if (mode !== toolMode) setNotice("");
+                    setKeyboard(false);
+                  }}
+                  onClose={() => {
+                    setPanel(false);
+                    setError("");
+                  }}
+                  onCancel={restoreOperation}
+                  onPreview={previewResult}
+                  onSave={() =>
+                    guarded(() => {
+                      if (preview) {
+                        const target = current.id;
+                        const name = preview.alias;
+                        add({ ...preview, lineStyle: "solid" });
+                        setSelected(target);
+                        setNotice(`已添加 ${name}，继续调节或选择其他工具。`);
+                        operationBefore.current = { points, refs };
+                      }
+                    })
+                  }
+                  onAction={action}
+                  onUpdate={(fn) =>
+                    guarded(() =>
+                      commit(functions.map((f) => (f.id === fn.id ? fn : f))),
+                    )
+                  }
+                  onError={setError}
+                  x0={x0}
+                  onX0={setX0}
+                  second={second}
+                  onSecond={setSecond}
+                  points={points}
+                  onPoints={setPoints}
+                  onRefs={setRefs}
+                />
+              )}
+              <div className="graph-settings">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={grid}
+                    onChange={(e) => setGrid(e.target.checked)}
+                  />
+                  网格
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={axes}
+                    onChange={(e) => setAxes(e.target.checked)}
+                  />
+                  坐标轴
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={ticks}
+                    onChange={(e) => setTicks(e.target.checked)}
+                  />
+                  刻度
+                </label>
+                <span>滚轮缩放 · 拖动画布 · 点击固定点</span>
                 <button
-                  key={i}
-                  onClick={() =>
-                    setPoints((ps) => ps.filter((_, j) => i !== j))
-                  }
-                  title="点击移除"
+                  onClick={() => {
+                    setPoints([]);
+                    setRefs([]);
+                  }}
                 >
-                  {p.label || pointLabel(i)} ({p.x.toFixed(3)}, {p.y.toFixed(3)}
-                  ) ×
+                  清除标记
                 </button>
-              ))}
-            </div>
+              </div>
+              {points.length > 0 && (
+                <div className="point-strip">
+                  {points.map((p, i) => (
+                    <button
+                      key={i}
+                      onClick={() =>
+                        setPoints((ps) => ps.filter((_, j) => i !== j))
+                      }
+                      title="点击移除"
+                    >
+                      {p.label || pointLabel(i)} ({p.x.toFixed(3)},{" "}
+                      {p.y.toFixed(3)}) ×
+                    </button>
+                  ))}
+                </div>
+              )}
+              {notice && !panel && !expression && (
+                <div className="graph-notice" role="status">
+                  <span>{notice}</span>
+                  <button
+                    aria-label="关闭操作提示"
+                    onClick={() => setNotice("")}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+              {error && !panel && !expression && (
+                <div className="graph-feedback" role="alert">
+                  {error}
+                </div>
+              )}
+              <div
+                className={`graph-resize-handle ${graphResizing ? "is-resizing" : ""}`}
+                role="separator"
+                tabIndex={0}
+                aria-label="调整图像区域高度"
+                aria-orientation="horizontal"
+                aria-valuemin={25}
+                aria-valuemax={85}
+                aria-valuenow={Math.round(graphRatio * 100)}
+                aria-valuetext={`图像高度 ${Math.round(graphRatio * 100)}%`}
+                onPointerDown={(e) => {
+                  if (e.button !== 0 || graphResize.current) return;
+                  e.preventDefault();
+                  e.currentTarget.setPointerCapture(e.pointerId);
+                  setGraphResizing(true);
+                  graphResize.current = {
+                    id: e.pointerId,
+                    y: e.clientY,
+                    height:
+                      e.currentTarget.parentElement!.getBoundingClientRect()
+                        .height,
+                    viewport: document.documentElement.clientHeight,
+                  };
+                }}
+                onPointerMove={(e) => {
+                  const start = graphResize.current;
+                  if (
+                    !start ||
+                    start.id !== e.pointerId ||
+                    Math.abs(e.clientY - start.y) < 4
+                  )
+                    return;
+                  resizeGraph(
+                    (start.height + e.clientY - start.y) / start.viewport,
+                  );
+                }}
+                onPointerUp={(e) => {
+                  if (graphResize.current?.id !== e.pointerId) return;
+                  graphResize.current = null;
+                  setGraphResizing(false);
+                  if (e.currentTarget.hasPointerCapture(e.pointerId))
+                    e.currentTarget.releasePointerCapture(e.pointerId);
+                }}
+                onPointerCancel={(e) => {
+                  if (graphResize.current?.id !== e.pointerId) return;
+                  graphResize.current = null;
+                  setGraphResizing(false);
+                }}
+                onLostPointerCapture={(e) => {
+                  if (graphResize.current?.id !== e.pointerId) return;
+                  graphResize.current = null;
+                  setGraphResizing(false);
+                }}
+                onDoubleClick={() => resizeGraph(0.6)}
+                onKeyDown={(e) => {
+                  if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(e.key))
+                    return;
+                  e.preventDefault();
+                  resizeGraph(
+                    e.key === "Home"
+                      ? 0.25
+                      : e.key === "End"
+                        ? 0.85
+                        : graphRatio + (e.key === "ArrowDown" ? 0.05 : -0.05),
+                  );
+                }}
+              >
+                <span className="resize-grip" />
+                <span>按住这里 · 上下拖拽</span>
+              </div>
+            </>
           )}
-          {notice && !panel && !expression && (
-            <div className="graph-notice" role="status">
-              <span>{notice}</span>
-              <button aria-label="关闭操作提示" onClick={() => setNotice("")}>
-                <X size={14} />
-              </button>
-            </div>
-          )}
-          {error && !panel && !expression && (
-            <div className="graph-feedback" role="alert">
-              {error}
-            </div>
-          )}
-          <div
-            className={`graph-resize-handle ${graphResizing ? "is-resizing" : ""}`}
-            role="separator"
-            tabIndex={0}
-            aria-label="调整图像区域高度"
-            aria-orientation="horizontal"
-            aria-valuemin={25}
-            aria-valuemax={85}
-            aria-valuenow={Math.round(graphRatio * 100)}
-            aria-valuetext={`图像高度 ${Math.round(graphRatio * 100)}%`}
-            onPointerDown={(e) => {
-              if (e.button !== 0 || graphResize.current) return;
-              e.preventDefault();
-              e.currentTarget.setPointerCapture(e.pointerId);
-              setGraphResizing(true);
-              graphResize.current = {
-                id: e.pointerId,
-                y: e.clientY,
-                height:
-                  e.currentTarget.parentElement!.getBoundingClientRect().height,
-                viewport: document.documentElement.clientHeight,
-              };
-            }}
-            onPointerMove={(e) => {
-              const start = graphResize.current;
-              if (
-                !start ||
-                start.id !== e.pointerId ||
-                Math.abs(e.clientY - start.y) < 4
-              )
-                return;
-              resizeGraph(
-                (start.height + e.clientY - start.y) / start.viewport,
-              );
-            }}
-            onPointerUp={(e) => {
-              if (graphResize.current?.id !== e.pointerId) return;
-              graphResize.current = null;
-              setGraphResizing(false);
-              if (e.currentTarget.hasPointerCapture(e.pointerId))
-                e.currentTarget.releasePointerCapture(e.pointerId);
-            }}
-            onPointerCancel={(e) => {
-              if (graphResize.current?.id !== e.pointerId) return;
-              graphResize.current = null;
-              setGraphResizing(false);
-            }}
-            onLostPointerCapture={(e) => {
-              if (graphResize.current?.id !== e.pointerId) return;
-              graphResize.current = null;
-              setGraphResizing(false);
-            }}
-            onDoubleClick={() => resizeGraph(0.6)}
-            onKeyDown={(e) => {
-              if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(e.key))
-                return;
-              e.preventDefault();
-              resizeGraph(
-                e.key === "Home"
-                  ? 0.25
-                  : e.key === "End"
-                    ? 0.85
-                    : graphRatio + (e.key === "ArrowDown" ? 0.05 : -0.05),
-              );
-            }}
-          >
-            <span className="resize-grip" />
-            <span>按住这里 · 上下拖拽</span>
-          </div>
         </section>
       </main>
       <footer>
@@ -1591,7 +1695,13 @@ export default function App() {
         <span>{functions.filter((f) => f.visible).length} 条可见曲线</span>
       </footer>
       {palette && (
-        <CommandPalette onAction={action} onClose={() => setPalette(false)} />
+        <CommandPalette
+          onAction={(key) => {
+            setWorkspaceMode("graph");
+            action(key);
+          }}
+          onClose={() => setPalette(false)}
+        />
       )}
     </div>
   );

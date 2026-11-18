@@ -2,6 +2,33 @@ import { describe, expect, it } from "vitest";
 import { editMathInput } from "../utils/mathInput";
 
 describe("math keyboard editing", () => {
+  it("uses a sensible base for square shortcuts and squares selected expressions", () => {
+    expect(editMathInput("", 0, 0, { type: "insert", value: "^2" }).text).toBe(
+      "x^2",
+    );
+    expect(editMathInput("x", 1, 1, { type: "insert", value: "^2" }).text).toBe(
+      "x^2",
+    );
+    expect(
+      editMathInput("x+1", 0, 3, { type: "insert", value: "^2" }).text,
+    ).toBe("(x+1)^2");
+  });
+  it("inserts a usable fraction and selects a placeholder or the denominator after wrapping a selection", () => {
+    expect(
+      editMathInput("", 0, 0, {
+        type: "template",
+        value: "($)/(1)",
+        select: "1",
+      }),
+    ).toEqual({ text: "(x)/(1)", start: 1, end: 2 });
+    expect(
+      editMathInput("sin(x)+2", 0, 6, {
+        type: "template",
+        value: "($)/(1)",
+        select: "1",
+      }),
+    ).toEqual({ text: "(sin(x))/(1)+2", start: 10, end: 11 });
+  });
   it("pairs parentheses and puts the cursor inside", () => {
     expect(editMathInput("x+", 2, 2, { type: "insert", value: "(" })).toEqual({
       text: "x+()",

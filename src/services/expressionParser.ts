@@ -1,5 +1,5 @@
-import { parse } from "mathjs";
-import type { MathNode } from "mathjs";
+import { ConstantNode, FunctionNode, parse, SymbolNode } from "mathjs";
+import type { MathNode, OperatorNode, ParenthesisNode } from "mathjs";
 import { ALL_DOMAIN } from "../types/function";
 import type { Domain } from "../types/function";
 import { normalizeMathCharacters } from "../utils/userExpression";
@@ -46,6 +46,7 @@ export interface ExpressionContext {
   functions?: Record<string, (value: number) => number>;
 }
 export interface PreparedExpression {
+  inputAxis?: "y";
   expression: string;
   variable: string;
   parameters: Record<string, number>;
@@ -301,7 +302,24 @@ function validate(node: MathNode, context: ExpressionContext): void {
       )
         throw new Error(`函数 ${value.name} 需要参数，例如 ${value.name}(x)。`);
     } else if (child.type === "OperatorNode") {
-      if (!["+", "-", "*", "/", "^", "%"].includes(value.op ?? ""))
+      if (
+        ![
+          "+",
+          "-",
+          "*",
+          "/",
+          "^",
+          "%",
+          "<",
+          ">",
+          "<=",
+          ">=",
+          "==",
+          "!=",
+          "and",
+          "or",
+        ].includes(value.op ?? "")
+      )
         throw new Error("不支持的运算");
     } else if (child.type === "FunctionNode") {
       const name = (value.fn as MathNode & { name?: string })?.name;
@@ -316,7 +334,11 @@ function validate(node: MathNode, context: ExpressionContext): void {
           count > (["log", "round", "floor", "ceil"].includes(name) ? 2 : 1))
       )
         throw new Error(`函数 ${name} 的参数个数不正确。`);
-    } else if (child.type !== "ParenthesisNode")
+    } else if (
+      !["ParenthesisNode", "ConditionalNode", "RelationalNode"].includes(
+        child.type,
+      )
+    )
       throw new Error("表达式只能包含数学运算、自变量、参数和数学函数");
   });
 }
@@ -337,8 +359,15 @@ export function prepareExpression(
   input: string,
   knownFunctionNames: string[] = [],
 ): PreparedExpression {
+  const reversed = normalizeMathCharacters(input)
+    .trim()
+    .match(/^x\s*=(?!=)\s*(.+)$/i);
   const declared = normalizeMathCharacters(input).trim().match(declaration);
-  const expression = normalizeExpression(input, knownFunctionNames);
+  const expression = normalizeExpression(
+    reversed ? reversed[1] : input,
+    knownFunctionNames,
+    reversed ? "y" : undefined,
+  );
   const node = parseExpression(expression);
   const free: string[] = [];
   const usedFunctions: string[] = [];
@@ -356,7 +385,7 @@ export function prepareExpression(
       free.push(name);
   });
   const variable =
-    declared?.[2] ??
+    (reversed ? "y" : declared?.[2]) ??
     (free.includes("x")
       ? "x"
       : free.includes("t")
@@ -364,6 +393,10 @@ export function prepareExpression(
         : (free.find((n) => /^[a-zA-Z]$/.test(n)) ?? "x"));
   if (variable === "e")
     throw new Error("常量 e 不能作为自变量，请换用其他字母。");
+  if (reversed && free.includes("x"))
+    throw new Error(
+      "x = 的右侧请使用 y，例如 x = 2y + 1；一般隐式方程暂不支持。",
+    );
   const parameters = Object.fromEntries(
     free
       .filter((n) => n !== variable && /^[a-zA-Z]$/.test(n))
@@ -382,6 +415,7 @@ export function prepareExpression(
   )
     throw new Error("函数名称不能使用数学函数或常量名称。");
   return {
+    inputAxis: reversed ? "y" : undefined,
     expression,
     variable,
     parameters,
@@ -389,6 +423,82 @@ export function prepareExpression(
     usedFunctions,
   };
 }
+function unwrap(node: MathNode): MathNode {
+  return node.type === "ParenthesisNode"
+    ? unwrap((node as ParenthesisNode).content)
+    : node;
+}
+
+function signedInteger(node: MathNode): number {
+  const inner = unwrap(node);
+  if (inner.type === "OperatorNode") {
+    const { op, args } = inner as OperatorNode;
+    if (args.length === 1 && (op === "+" || op === "-"))
+      return (op === "-" ? -1 : 1) * signedInteger(args[0]);
+  }
+  if (inner.type !== "ConstantNode") return NaN;
+  const { value } = inner as ConstantNode;
+  return typeof value === "number" && Number.isSafeInteger(value) ? value : NaN;
+}
+
+function oddDenominatorFraction(
+  node: MathNode,
+): { numerator: number; denominator: number } | undefined {
+  const inner = unwrap(node);
+  if (inner.type !== "OperatorNode") return;
+  const { op, args } = inner as OperatorNode;
+  if (args.length === 1 && (op === "+" || op === "-")) {
+    const fraction = oddDenominatorFraction(args[0]);
+    if (fraction && op === "-") fraction.numerator *= -1;
+    return fraction;
+  }
+  if (op !== "/" || args.length !== 2) return;
+  const numerator = signedInteger(args[0]);
+  const denominator = signedInteger(args[1]);
+  if (
+    !Number.isFinite(numerator) ||
+    !Number.isFinite(denominator) ||
+    !denominator
+  )
+    return;
+  let divisor = Math.abs(numerator);
+  let remainder = Math.abs(denominator);
+  while (remainder) [divisor, remainder] = [remainder, divisor % remainder];
+  const reducedDenominator = Math.abs(denominator) / divisor;
+  if (reducedDenominator <= 1 || reducedDenominator % 2 === 0) return;
+  return {
+    numerator: (numerator / divisor) * Math.sign(denominator),
+    denominator: reducedDenominator,
+  };
+}
+
+const realPowerSymbol = "__realOddDenominatorPower";
+
+function realOddDenominatorPower(
+  base: unknown,
+  numerator: number,
+  denominator: number,
+) {
+  if (typeof base !== "number") return NaN;
+  const magnitude = Math.pow(Math.abs(base), numerator / denominator);
+  return base < 0 && numerator % 2 !== 0 ? -magnitude : magnitude;
+}
+
+function realPowers(node: MathNode): MathNode {
+  return node.transform((child) => {
+    if (child.type !== "OperatorNode") return child;
+    const { op, args } = child as OperatorNode;
+    if (op !== "^" || args.length !== 2) return child;
+    const fraction = oddDenominatorFraction(args[1]);
+    if (!fraction) return child;
+    return new FunctionNode(new SymbolNode(realPowerSymbol), [
+      realPowers(args[0]),
+      new ConstantNode(fraction.numerator),
+      new ConstantNode(fraction.denominator),
+    ]);
+  });
+}
+
 export function compileExpression(
   input: string,
   context?: ExpressionContext,
@@ -414,13 +524,14 @@ export function compileExpression(
   }
   const node = parseExpression(normalized);
   validate(node, actual);
-  const compiled = node.compile();
+  const compiled = realPowers(node).compile();
   return (x: number): number => {
     if (!Number.isFinite(x)) return NaN;
     try {
       const result: unknown = compiled.evaluate({
         ...actual.parameters,
         ...(context?.functions ?? {}),
+        [realPowerSymbol]: realOddDenominatorPower,
         [variable]: x,
       });
       return typeof result === "number" && Number.isFinite(result)

@@ -14,8 +14,25 @@ import { piAxisUsage, piTickStep, formatPiTick } from "../utils/piTicks";
 import type { AxisLabelMode } from "../utils/piTicks";
 import { placeCurveLabels, segmentDistance } from "../utils/curveLabels";
 import type { LabelBox } from "../utils/curveLabels";
+import { drawCalculus } from "../services/calculusDrawing";
+import type { CalculusDecoration } from "../services/calculusDrawing";
 
 interface Props {
+  hideSelection?: boolean;
+  showCurveLabels?: boolean;
+  traceAxis?: "x" | "y";
+  traceOnHover?: boolean;
+  handles?: {
+    id: string;
+    point: GraphPoint;
+    color: string;
+    label: string;
+    axis: "x" | "y";
+    onChange: (value: number) => void;
+  }[];
+  sampleCount?: number;
+  calculus?: CalculusDecoration;
+  onTrace?: (x: number) => void;
   functions: FunctionDefinition[];
   legendFunctions?: FunctionDefinition[];
   showLegend?: boolean;
@@ -140,6 +157,8 @@ export default function GraphCanvas(props: Props) {
     onHover,
   } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const activeHandle = useRef<string | null>(null);
+  const forcedPan = useRef(false);
   const hostRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{
     x: number;
@@ -248,11 +267,12 @@ export default function GraphCanvas(props: Props) {
             fn,
             sourceMin,
             sourceMax,
-            Math.max(1200, Math.round(Math.max(size.width, size.height) * 2)),
+            props.sampleCount ??
+              Math.max(1200, Math.round(Math.max(size.width, size.height) * 2)),
           ),
         };
       });
-  }, [functions, viewport, size]);
+  }, [functions, viewport, size, props.sampleCount]);
 
   useEffect(() => {
     setSettling(true);
@@ -295,6 +315,7 @@ export default function GraphCanvas(props: Props) {
   );
   const curveLabels = useMemo(() => {
     if (
+      props.showCurveLabels === false ||
       dragging ||
       settling ||
       settledView.current !== viewport ||
@@ -420,6 +441,7 @@ export default function GraphCanvas(props: Props) {
     functions,
     props.legendFunctions,
     props.selected,
+    props.showCurveLabels,
     symbolicAxes,
   ]);
 
@@ -576,6 +598,15 @@ export default function GraphCanvas(props: Props) {
       ctx.stroke();
       ctx.setLineDash([]);
     });
+    if (props.calculus)
+      drawCalculus(
+        ctx,
+        props.calculus,
+        toScreen,
+        size.width,
+        size.height,
+        true,
+      );
     let curveIndex = 0;
     functions
       .filter((fn) => fn.visible)
@@ -644,6 +675,24 @@ export default function GraphCanvas(props: Props) {
       });
     ctx.globalAlpha = 1;
     ctx.setLineDash([]);
+    if (props.calculus)
+      drawCalculus(ctx, props.calculus, toScreen, size.width, size.height);
+    for (const handle of props.handles ?? []) {
+      const p = toScreen(handle.point);
+      if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+      ctx.setLineDash([]);
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = handle.color;
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = handle.color;
+      ctx.font = "bold 12px system-ui";
+      ctx.textAlign = "left";
+      ctx.fillText(handle.label, p.x + 11, p.y - 12);
+    }
     points.forEach((point, index) => {
       const screen = toScreen(point);
       if (
@@ -703,6 +752,8 @@ export default function GraphCanvas(props: Props) {
     dragging,
     props.selected,
     symbolicAxes,
+    props.calculus,
+    props.handles,
   ]);
 
   const locate = (x: number, y: number) => {
@@ -789,7 +840,11 @@ export default function GraphCanvas(props: Props) {
         className="graph-canvas"
         data-x-axis-labels={symbolicAxes.x ? "pi" : "numeric"}
         data-y-axis-labels={symbolicAxes.y ? "pi" : "numeric"}
-        aria-label="函数坐标图，双指缩放，单指拖动，鼠标点击或触屏长按标记坐标"
+        aria-label={
+          props.onTrace
+            ? "函数研究坐标图，拖动观察点或端点，双指缩放，Shift 拖动平移"
+            : "函数坐标图，双指缩放，单指拖动，鼠标点击或触屏长按标记坐标"
+        }
         role="img"
         data-selected-function={props.selected}
         style={{
@@ -800,7 +855,8 @@ export default function GraphCanvas(props: Props) {
           cursor: dragging ? "grabbing" : "crosshair",
         }}
         onPointerDown={(event) => {
-          if (event.button !== 0) return;
+          if (event.button !== 0 && event.button !== 1) return;
+          forcedPan.current = event.shiftKey || event.button === 1;
           event.currentTarget.setPointerCapture(event.pointerId);
           if (pointers.current.size === 0)
             pressTime.current = performance.now();
@@ -809,6 +865,32 @@ export default function GraphCanvas(props: Props) {
             canvasPosition(event.currentTarget, event.clientX, event.clientY),
           );
           rebaseGesture();
+          if (pointers.current.size > 1) activeHandle.current = null;
+          if (pointers.current.size === 1 && !forcedPan.current) {
+            const p = canvasPosition(
+              event.currentTarget,
+              event.clientX,
+              event.clientY,
+            );
+            activeHandle.current =
+              props.handles?.find((h) => {
+                const s = toScreen(h.point);
+                return Math.hypot(s.x - p.x, s.y - p.y) < 17;
+              })?.id ?? null;
+          }
+          if (
+            props.onTrace &&
+            pointers.current.size === 1 &&
+            !activeHandle.current &&
+            !forcedPan.current
+          ) {
+            const p = canvasPosition(
+              event.currentTarget,
+              event.clientX,
+              event.clientY,
+            );
+            props.onTrace(toWorld(p.x, p.y)[props.traceAxis ?? "x"]);
+          }
           setHover(null);
           setDragging(true);
         }}
@@ -836,6 +918,14 @@ export default function GraphCanvas(props: Props) {
                   bounds.height,
                 ),
               );
+            } else if (activeHandle.current) {
+              const handle = props.handles?.find(
+                (h) => h.id === activeHandle.current,
+              );
+              if (handle)
+                handle.onChange(toWorld(point.x, point.y)[handle.axis]);
+            } else if (props.onTrace && !forcedPan.current) {
+              props.onTrace(toWorld(point.x, point.y)[props.traceAxis ?? "x"]);
             } else if (drag.current) {
               const dx = point.x - drag.current.x;
               const dy = point.y - drag.current.y;
@@ -849,7 +939,13 @@ export default function GraphCanvas(props: Props) {
                     drag.current.viewport.cy + dy / drag.current.viewport.scale,
                 });
             }
-          } else if (event.pointerType === "mouse") {
+          } else if (
+            event.pointerType === "mouse" &&
+            props.onTrace &&
+            props.traceOnHover
+          ) {
+            props.onTrace(toWorld(point.x, point.y)[props.traceAxis ?? "x"]);
+          } else if (event.pointerType === "mouse" && !props.onTrace) {
             const nearest = locate(point.x, point.y);
             setHover(nearest);
             onHover?.(nearest);
@@ -859,6 +955,7 @@ export default function GraphCanvas(props: Props) {
           if (!pointers.current.has(event.pointerId)) return;
           if (
             pointers.current.size === 1 &&
+            !props.onTrace &&
             drag.current &&
             !drag.current.moved
           ) {
@@ -893,17 +990,24 @@ export default function GraphCanvas(props: Props) {
               onPoint(locate(click.x, click.y));
           }
           endPointer(event.pointerId);
+          activeHandle.current = null;
           if (event.currentTarget.hasPointerCapture(event.pointerId))
             event.currentTarget.releasePointerCapture(event.pointerId);
         }}
-        onPointerCancel={(event) => endPointer(event.pointerId)}
-        onLostPointerCapture={(event) => endPointer(event.pointerId)}
+        onPointerCancel={(event) => {
+          endPointer(event.pointerId);
+          activeHandle.current = null;
+        }}
+        onLostPointerCapture={(event) => {
+          endPointer(event.pointerId);
+          activeHandle.current = null;
+        }}
         onPointerLeave={() => {
           setHover(null);
           onHover?.(null);
         }}
       />
-      {selectedFunction && !props.showLegend && (
+      {selectedFunction && !props.showLegend && !props.hideSelection && (
         <div
           className="graph-selection"
           role="status"

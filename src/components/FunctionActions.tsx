@@ -567,11 +567,11 @@ export default function FunctionActions(props: Props) {
           {mode === "parameters" && (
             <div className="action-fields">
               <label>
-                横轴变量{" "}
+                {current.inputAxis ? "纵轴自变量" : "横轴变量"}{" "}
                 <select
                   aria-label="自变量"
                   value={current.variable || "x"}
-                  disabled={current.locked}
+                  disabled={current.locked || !!current.inputAxis}
                   onChange={(e) => {
                     const next = e.target.value,
                       parameters = { ...current.parameters };

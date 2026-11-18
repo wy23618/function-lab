@@ -56,6 +56,7 @@ function contextualDerivativeSource(
   return contextual;
 }
 export function evaluateFunction(fn: FunctionDefinition, x: number): number {
+  if (fn.calculusLink?.error) return NaN;
   if (fn.kind !== "function" || !domainContains(fn.domain, x)) return NaN;
   const constraints = (
     fn as FunctionDefinition & {
@@ -128,13 +129,23 @@ export function sampleFunction(
   max: number,
   count = 1600,
 ): GraphPoint[][] {
+  if (fn.calculusLink?.error) return [];
   if (!Number.isFinite(min) || !Number.isFinite(max) || max <= min) return [];
   count = Math.max(16, Math.min(20000, Math.floor(count)));
   if (fn.kind === "relation" && fn.source && fn.reflection) {
     const { a, b, c } = fn.reflection,
       norm = a * a + b * b;
     if (!Number.isFinite(norm) || norm === 0) return [];
-    return sampleFunction(fn.source, min, max, count).map((segment) =>
+    const source = fn.inputAxis
+      ? {
+          ...fn.source,
+          parameters: fn.parameters,
+          domain: fn.domain,
+          bindings: fn.bindings,
+          liveBindings: fn.liveBindings,
+        }
+      : fn.source;
+    return sampleFunction(source, min, max, count).map((segment) =>
       segment.map((p) => {
         const distance = (a * p.x + b * p.y + c) / norm;
         return { x: p.x - 2 * a * distance, y: p.y - 2 * b * distance };
@@ -164,6 +175,7 @@ export function sampleFunction(
     right: GraphPoint,
     depth = 0,
     originalMagnitude = Math.max(Math.abs(left.y), Math.abs(right.y), 1e-300),
+    initialSpread?: number,
   ): void => {
     const x = (left.x + right.x) / 2;
     if (x === left.x || x === right.x) {
@@ -179,6 +191,7 @@ export function sampleFunction(
     const finite = values.every(Number.isFinite);
     const magnitude = Math.max(...values.map(Math.abs), 1e-300);
     const spread = Math.max(...values) - Math.min(...values);
+    const referenceSpread = initialSpread ?? (finite ? spread : 0);
     const error = Math.max(
       Math.abs(y - (left.y / 2 + right.y / 2)),
       Math.abs(q1 - (left.y * 0.75 + right.y * 0.25)),
@@ -197,6 +210,10 @@ export function sampleFunction(
         if (
           !finite ||
           peak ||
+          (depth >= 24 &&
+            spread >
+              Math.max(originalMagnitude * 1e-6, referenceSpread * 0.02) &&
+            error > spread * 0.1) ||
           magnitude > originalMagnitude * 16 ||
           (left.y * right.y < 0 && overshoot)
         )
@@ -205,8 +222,8 @@ export function sampleFunction(
         return;
       }
       if (Number.isFinite(y)) {
-        connect(left, mid, depth + 1, originalMagnitude);
-        connect(mid, right, depth + 1, originalMagnitude);
+        connect(left, mid, depth + 1, originalMagnitude, referenceSpread);
+        connect(mid, right, depth + 1, originalMagnitude, referenceSpread);
       } else {
         flush();
         current.push(right);

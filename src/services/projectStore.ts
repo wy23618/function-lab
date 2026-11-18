@@ -59,6 +59,33 @@ export function validateFunctions(data: unknown): FunctionDefinition[] {
     )
       throw new Error("实验文件中的函数数据不完整。");
     const identifier = /^[A-Za-z][A-Za-z0-9_]*$/;
+    if (
+      f.calculusLink &&
+      (!["derivative", "taylor"].includes(f.calculusLink.kind) ||
+        typeof f.calculusLink.sourceId !== "string" ||
+        !Number.isInteger(f.calculusLink.order) ||
+        f.calculusLink.order < (f.calculusLink.kind === "derivative" ? 1 : 0) ||
+        f.calculusLink.order > 12 ||
+        (f.calculusLink.kind === "taylor" &&
+          !Number.isFinite(f.calculusLink.center)) ||
+        (f.calculusLink.frozen !== undefined &&
+          typeof f.calculusLink.frozen !== "boolean") ||
+        (f.calculusLink.error !== undefined &&
+          (typeof f.calculusLink.error !== "string" ||
+            f.calculusLink.error.length > 4000)))
+    )
+      throw new Error("微积分关联数据无效。");
+    if (
+      f.inputAxis !== undefined &&
+      (f.inputAxis !== "y" ||
+        f.kind !== "relation" ||
+        f.variable !== "y" ||
+        f.source?.kind !== "function" ||
+        f.reflection?.a !== 1 ||
+        f.reflection?.b !== -1 ||
+        f.reflection?.c !== 0)
+    )
+      throw new Error("反向坐标关系无效。");
     const reserved = new Set([
       "e",
       "pi",

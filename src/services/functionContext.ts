@@ -5,6 +5,7 @@ import { prepareExpression, normalizeExpression } from "./expressionParser";
 import type { ExpressionContext } from "./expressionParser";
 import { makeFunction } from "./transformEngine";
 import { evaluateFunction } from "./functionSampler";
+import { rebuildCalculusLayer } from "./calculusRelations";
 
 export function functionAlias(fn: FunctionDefinition): string | undefined {
   return (
@@ -62,7 +63,7 @@ export function prepareFunction(
     const names = ["f", "g", "h", "p", "q", "r", "s", "u", "v", "w"];
     alias = names.find((name) => !candidates.has(name)) ?? `f${index + 1}`;
   }
-  return {
+  const result: FunctionDefinition = {
     ...fn,
     currentExpression: prepared.expression,
     originalExpression: previous?.originalExpression ?? prepared.expression,
@@ -72,7 +73,23 @@ export function prepareFunction(
     liveBindings,
     alias,
     name: alias ? `${alias}(${prepared.variable})` : fn.name,
+    kind: "function",
+    inputAxis: undefined,
+    source: undefined,
+    reflection: undefined,
+    calculusLink: undefined,
   };
+  return prepared.inputAxis
+    ? {
+        ...result,
+        kind: "relation",
+        inputAxis: "y",
+        name: "反向关系",
+        currentExpression: `x = ${prepared.expression}`,
+        source: { ...result },
+        reflection: { a: 1, b: -1, c: 0 },
+      }
+    : result;
 }
 
 /** Resolve dependencies by identity, keeping the last valid snapshot on deletion. */
@@ -98,23 +115,23 @@ export function refreshFunctionBindings(
         deletedSource = true;
       }
     }
-    let result = { ...fn, bindings, liveBindings };
+    let result: FunctionDefinition = { ...fn, bindings, liveBindings };
     if (deletedSource) {
       // Expand the displayed formula, while retaining an evaluation gate for
       // the original nested domains (e.g. a restricted inner function).
+      const body =
+        fn.inputAxis && fn.source
+          ? { ...fn.source, parameters: fn.parameters, bindings, liveBindings }
+          : result;
+      const expanded = canonicalExpression(body, 0, false, fn.variable || "x");
       result = {
         ...result,
-        currentExpression: canonicalExpression(
-          result,
-          0,
-          false,
-          fn.variable || "x",
-        ),
+        currentExpression: fn.inputAxis ? `x = ${expanded}` : expanded,
         liveBindings: {},
         domainConstraints: [
           ...(fn.domainConstraints || []),
           {
-            expression: fn.currentExpression,
+            expression: body.currentExpression,
             domain: {
               min: -Infinity,
               max: Infinity,
@@ -124,6 +141,35 @@ export function refreshFunctionBindings(
           },
         ],
       };
+      if (fn.inputAxis)
+        result.source = {
+          ...body,
+          currentExpression: expanded,
+          liveBindings: {},
+          domainConstraints: result.domainConstraints,
+        };
+    }
+    if (fn.calculusLink) {
+      const origin = byId.get(fn.calculusLink.sourceId);
+      if (origin) {
+        const updated = visit(origin);
+        try {
+          result = rebuildCalculusLayer(result, updated);
+        } catch (e) {
+          result = {
+            ...result,
+            calculusLink: {
+              ...fn.calculusLink,
+              frozen: false,
+              error: e instanceof Error ? e.message : "来源暂不满足计算条件",
+            },
+          };
+        }
+      } else
+        result = {
+          ...result,
+          calculusLink: { ...fn.calculusLink, frozen: true },
+        };
     }
     visiting.delete(fn.id);
     resolved.set(fn.id, result);

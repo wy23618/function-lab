@@ -38,6 +38,15 @@ export interface FunctionDefinition {
   }[];
   lineStyle: "solid" | "dashed";
   kind: "function" | "relation";
+  inputAxis?: "y";
+  calculusLink?: {
+    kind: "derivative" | "taylor";
+    sourceId: string;
+    order: number;
+    center?: number;
+    frozen?: boolean;
+    error?: string;
+  };
   parentFunctionId?: string;
   transformHistory: TransformOperation[];
   source?: FunctionDefinition;

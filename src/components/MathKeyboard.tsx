@@ -30,7 +30,7 @@ const numbers: Key[] = [
   textKey("3"),
   textKey("−", "-"),
   textKey("x"),
-  textKey("t"),
+  textKey("y"),
   textKey("0"),
   textKey("."),
   textKey("+"),
@@ -70,6 +70,12 @@ const functions = [
   functionKey(name, name === "sqrt" ? "√" : name === "abs" ? "|a|" : name),
 );
 const symbols: Key[] = [
+  { label: "a/b", action: { type: "template", value: "($)/(1)", select: "1" } },
+  textKey("<"),
+  textKey("≤", "<="),
+  textKey("?"),
+  textKey(":"),
+  textKey("t"),
   textKey("("),
   textKey(")"),
   textKey(","),
